@@ -246,7 +246,38 @@ export async function createConversation(conversation: InsertConversation): Prom
   const result = await db.insert(conversations).values(conversation);
   return Number(result[0].insertId);
 }
-
+export async function getOrCreateConversation(params: {
+  accountId: number;
+  customerPhone: string;
+  customerName?: string;
+}): Promise<Conversation> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  // Try to find existing conversation
+  const existing = await getConversationByPhone(params.customerPhone, params.accountId);
+  if (existing) {
+    return existing;
+  }
+  
+  // Create new conversation
+  const conversationId = await createConversation({
+    accountId: params.accountId,
+    customerPhone: params.customerPhone,
+    customerName: params.customerName || params.customerPhone,
+    lastMessageAt: new Date(),
+    unreadCount: 0,
+    isNew: true,
+  });
+  
+  // Fetch and return the newly created conversation
+  const newConversation = await getConversationById(conversationId);
+  if (!newConversation) {
+    throw new Error("Failed to create conversation");
+  }
+  
+  return newConversation;
+}
 export async function updateConversation(id: number, updates: Partial<InsertConversation>): Promise<void> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
