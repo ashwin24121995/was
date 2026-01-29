@@ -139,6 +139,28 @@
 - [x] Implement Settings page with URL configuration and endpoint generation
 - [ ] Implement Dashboard page with statistics (total accounts, active accounts, messages sent/received)
 - [x] Update webhook receiver to validate webhook secret
-- [ ] Add webhook secret to existing webhook account (165a269286b3e49c924bb3573704a672)
+- [x] Add webhook secret to existing webhook account (165a269286b3e49c924bb3573704a672)
 - [ ] Test complete webhook flow with WaSender
 - [x] Push all changes to GitHub/Railway
+
+## Agent Login Redirect Issue
+- [ ] Fix agent login - login successful but not redirecting to dashboard
+- [ ] Check AgentLogin.tsx redirect logic
+- [ ] Verify agent dashboard route (/agent)
+- [ ] Test agent login flow after fix
+
+## Incoming Messages Not Showing
+- [ ] Check webhook logs in admin dashboard
+- [ ] Test webhook endpoint manually
+- [ ] Verify message storage in database
+- [ ] Check agent dashboard conversation list query
+- [ ] Test complete message flow
+
+## Webhook Connection Test Feature
+- [x] Add WaSender API test connection function (check session status)
+- [x] Create tRPC router for testing webhook connection
+- [x] Add Test Connection button to Webhook Accounts table
+- [x] Add connection status indicator (toast messages with success/warning/error)
+- [x] Display detailed error messages if connection fails
+- [ ] Push changes to GitHub and deploy to Railway
+- [ ] Test the connection verification feature

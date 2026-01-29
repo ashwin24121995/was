@@ -140,6 +140,19 @@ function WebhookAccountsTab() {
     },
   });
 
+  const testConnectionMutation = trpc.webhookAccounts.testConnection.useMutation({
+    onSuccess: (data) => {
+      if (data.connected) {
+        toast.success(data.message);
+      } else {
+        toast.warning(data.message);
+      }
+    },
+    onError: (error) => {
+      toast.error(error.message);
+    },
+  });
+
   const handleCreate = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
@@ -265,8 +278,22 @@ function WebhookAccountsTab() {
                           regenerateKeyMutation.mutate({ id: account.id });
                         }
                       }}
+                      title="Regenerate API Key"
                     >
                       <RefreshCw className="w-3 h-3" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => testConnectionMutation.mutate({ id: account.id })}
+                      disabled={testConnectionMutation.isPending}
+                      title="Test WaSender Connection"
+                    >
+                      {testConnectionMutation.isPending ? (
+                        <RefreshCw className="w-3 h-3 animate-spin" />
+                      ) : (
+                        <span className="text-xs">🔌 Test</span>
+                      )}
                     </Button>
                   </div>
                 </TableCell>

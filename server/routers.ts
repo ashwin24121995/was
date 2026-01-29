@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
+import { createWASenderClient } from "./wasender-api";
 import { eq, desc } from "drizzle-orm";
 import argon2 from "argon2";
 import jwt from "jsonwebtoken";
@@ -369,6 +370,42 @@ export const appRouter = router({
         const newApiKey = generateRandomString(32);
         await updateWebhookAccount(input.id, { apiKey: newApiKey });
         return { success: true, apiKey: newApiKey };
+      }),
+
+    testConnection: adminProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input }) => {
+        const account = await getWebhookAccountById(input.id);
+        if (!account) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Webhook account not found",
+          });
+        }
+
+        const wasenderClient = createWASenderClient(account.apiKey);
+        const status = await wasenderClient.getSessionStatus();
+
+        if (!status) {
+          return {
+            success: false,
+            connected: false,
+            message: "Failed to connect to WaSender API. Please check your API key.",
+          };
+        }
+
+        return {
+          success: true,
+          connected: status.status === "connected",
+          status: status.status,
+          message:
+            status.status === "connected"
+              ? "✅ Connected successfully!"
+              : status.status === "qr"
+              ? "⚠️ Waiting for QR code scan"
+              : "❌ Not connected. Please scan QR code in WaSender.",
+          user: status.user,
+        };
       }),
   }),
 
