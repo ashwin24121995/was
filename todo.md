@@ -78,7 +78,7 @@
 
 ## Phase 8: Deployment
 - [x] Save checkpoint
-- [ ] Push to GitHub
+- [x] Push to GitHub
 - [ ] Deploy to Railway
 - [ ] Verify production deployment
 
@@ -96,3 +96,8 @@
 - [x] Form validation
 - [x] Confirmation dialogs
 - [x] Responsive UI design
+
+## Railway Deployment Issues
+- [ ] Fix database migration crash - tables already exist error
+- [ ] Remove `pnpm db:push` from start script (migrations should run separately)
+- [ ] Verify Railway deployment after fix
