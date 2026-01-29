@@ -96,3 +96,8 @@
 - [x] Replace bcrypt with argon2 (no crypto module issues)
 - [x] Update authentication routers to use argon2
 - [ ] Push to GitHub and test on Railway deployment
+
+## Root Cause Found - Nanoid Uses Crypto
+- [x] Replace nanoid with crypto-free alternative
+- [x] Use custom random string generator for API keys
+- [ ] Push to GitHub and test on Railway

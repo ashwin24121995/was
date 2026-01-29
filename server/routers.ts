@@ -3,7 +3,15 @@ import { TRPCError } from "@trpc/server";
 import { eq, desc } from "drizzle-orm";
 import argon2 from "argon2";
 import * as jose from "jose";
-import { nanoid } from "nanoid";
+// Custom random string generator (no crypto dependency)
+function generateRandomString(length: number): string {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  let result = '';
+  for (let i = 0; i < length; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return result;
+}
 import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
@@ -293,7 +301,7 @@ export const appRouter = router({
         }
 
         // Generate unique API key
-        const apiKey = nanoid(32);
+        const apiKey = generateRandomString(32);
 
         const account: InsertWebhookAccount = {
           name: input.name,
