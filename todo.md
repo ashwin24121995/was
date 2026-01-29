@@ -205,3 +205,8 @@
 - [x] Integrate with WASender API to send first message
 - [x] Update conversation list in real-time when new chat is created
 - [ ] Test complete flow: enter phone number → send message → receive reply
+
+## Bug Fix: WASender API Endpoint
+
+- [ ] Fix WASender API client to use correct endpoint /api/send-message instead of /api/send-text
+- [ ] Test Start New Chat feature after deployment

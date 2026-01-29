@@ -65,9 +65,9 @@ export class WASenderAPI {
    */
   async sendTextMessage(params: SendTextMessageParams): Promise<MessageResponse> {
     try {
-      const response = await this.client.post('/api/send-text', {
+      const response = await this.client.post('/api/send-message', {
         to: params.to,
-        message: params.message,
+        text: params.message,
       });
 
       return {
