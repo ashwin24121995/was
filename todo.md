@@ -51,3 +51,16 @@
 - [ ] Write tests for Socket.IO connection
 - [ ] Create comprehensive README
 - [ ] Document API endpoints
+
+## Bug Fixes
+- [ ] Fix database connection error in authentication queries
+- [ ] Ensure database schema is properly initialized
+- [ ] Add better error handling for database connection failures
+
+## Railway Deployment Issues
+- [x] Fix MySQL migration syntax error - multiple CREATE TABLE statements in single query
+- [x] Split migration into separate SQL statements
+
+## Production Deployment Crash
+- [x] Fix TypeError at dist/index.js:758 - path.join receiving undefined
+- [x] Replace import.meta.dirname with Node.js 18 compatible __dirname
