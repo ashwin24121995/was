@@ -170,4 +170,19 @@
 - [x] Verify authentication header format
 - [ ] Test API connection with correct endpoint
 - [ ] Fix any CORS or network issues
-- [ ] Push fix to GitHub and deploy to Railway
+- [x] Push fix to GitHub and deploy to Railway
+
+## Incoming Messages Not Showing in Agent Dashboard
+- [ ] Verify webhook URL is configured in WaSender dashboard
+- [ ] Check webhook logs to see if WaSender is sending requests
+- [ ] Verify agent is linked to webhook account
+- [ ] Test webhook endpoint manually with sample payload
+- [ ] Check if messages are being saved to database
+- [ ] Verify Socket.IO is broadcasting messages to agent dashboard
+- [ ] Fix any issues found in the message flow
+
+## Webhook Signature Validation Fix
+- [x] Update webhook receiver to validate X-Webhook-Signature header
+- [x] Remove webhook_secret query parameter validation
+- [ ] Test webhook with WaSender
+- [ ] Push fix to GitHub and deploy

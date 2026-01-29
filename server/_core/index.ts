@@ -37,14 +37,24 @@ async function startServer() {
   // OAuth callback disabled - using custom JWT authentication
   // registerOAuthRoutes(app);
   
-  // Webhook endpoint for receiving WhatsApp messages
-  app.post("/api/webhook/:apiKey", async (req, res) => {
-    const { apiKey } = req.params;
-    const { from, to, message, metadata } = req.body;
-
+  // Webhook endpoint for receiving WhatsApp messages from WaSender
+  app.post("/api/webhook/incoming", async (req, res) => {
     try {
-      const { getWebhookAccountByApiKey, getDb } = await import("../db");
-      const { webhookLogs } = await import("../../drizzle/schema");
+      // Get API key from query parameter
+      const apiKey = req.query.apiKey as string;
+      if (!apiKey) {
+        res.status(401).json({ error: "API key is required" });
+        return;
+      }
+
+      // Get webhook signature from header
+      const webhookSignature = req.headers['x-webhook-signature'] as string;
+      if (!webhookSignature) {
+        res.status(401).json({ error: "Webhook signature is required" });
+        return;
+      }
+
+      const { getWebhookAccountByApiKey, createWebhookLog, createMessage, getOrCreateConversation, getDb } = await import("../db");
       
       // Verify API key
       const account = await getWebhookAccountByApiKey(apiKey);
@@ -53,35 +63,76 @@ async function startServer() {
         return;
       }
 
+      // Verify webhook signature
+      if (account.webhookSecret !== webhookSignature) {
+        res.status(401).json({ error: "Invalid webhook signature" });
+        return;
+      }
+
       if (account.status !== "active") {
         res.status(403).json({ error: "Account is not active" });
         return;
       }
 
-      // Log the message
+      // Parse WaSender webhook payload
+      const { from, to, message, type, media_url, timestamp } = req.body;
+
+      // Log the webhook
+      await createWebhookLog({
+        accountId: account.id,
+        direction: "inbound",
+        fromNumber: from,
+        toNumber: to,
+        message: message || '',
+        metadata: JSON.stringify(req.body),
+        status: "received",
+        timestamp: timestamp ? new Date(timestamp) : new Date(),
+      });
+
+      // Create or get conversation
+      const conversation = await getOrCreateConversation({
+        accountId: account.id,
+        customerPhone: from,
+        customerName: from, // Will be updated later
+      });
+
+      // Save message to database
+      await createMessage({
+        conversationId: conversation.id,
+        sender: "customer",
+        content: message || '',
+        messageType: type || "text",
+        mediaUrl: media_url,
+        status: "delivered",
+      });
+
+      // Broadcast message via Socket.IO
+      const { getIO } = await import("./socket");
+      const io = getIO();
+      if (io) {
+        io.to(`account:${account.id}`).emit("new_message", {
+          conversationId: conversation.id,
+          message: {
+            sender: "customer",
+            content: message || '',
+            messageType: type || "text",
+            mediaUrl: media_url,
+            timestamp: new Date(),
+          },
+        });
+      }
+
+      // Update message count
+      const { eq } = await import("drizzle-orm");
+      const { webhookAccounts } = await import("../../drizzle/schema");
       const db = await getDb();
       if (db) {
-        const result = await db.insert(webhookLogs).values({
-          accountId: account.id,
-          direction: "inbound",
-          fromNumber: from,
-          toNumber: to,
-          message,
-          metadata: metadata ? JSON.stringify(metadata) : null,
-          status: "delivered",
-        });
-
-        // Update message count
-        const { eq } = await import("drizzle-orm");
-        const { webhookAccounts } = await import("../../drizzle/schema");
         await db.update(webhookAccounts)
           .set({ messagesReceived: account.messagesReceived + 1 })
           .where(eq(webhookAccounts.id, account.id));
-
-        res.json({ success: true, logId: result[0]?.insertId || 0 });
-      } else {
-        res.status(500).json({ error: "Database not available" });
       }
+
+      res.json({ success: true });
     } catch (error) {
       console.error("[Webhook] Error:", error);
       res.status(500).json({ error: "Internal server error" });
