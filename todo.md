@@ -117,4 +117,10 @@
 - [x] Create agent login page (client/src/pages/AgentLogin.tsx)
 - [x] Add /agent-login route to App.tsx
 - [ ] Test agent login flow
-- [ ] Push to GitHub and deploy
+- [x] Push to GitHub and deploy
+
+## Webhook Account API Key Field
+- [x] Add API key input field to webhook account creation form
+- [x] Update webhook account creation router to accept API key
+- [ ] Push changes to GitHub
+- [ ] Test creating webhook account with WASender API key

@@ -317,16 +317,15 @@ export const appRouter = router({
       .input(
         z.object({
           name: z.string().min(1, "Name is required"),
+          apiKey: z.string().min(1, "API Key is required"),
           webhookUrl: z.string().url().optional(),
           phoneNumber: z.string().optional(),
         })
       )
       .mutation(async ({ input }) => {
-        const apiKey = generateRandomString(32);
-
         const accountId = await createWebhookAccount({
           name: input.name,
-          apiKey,
+          apiKey: input.apiKey,
           webhookUrl: input.webhookUrl,
           phoneNumber: input.phoneNumber,
           status: "active",
@@ -334,7 +333,7 @@ export const appRouter = router({
 
         return {
           success: true,
-          apiKey,
+          apiKey: input.apiKey,
           accountId,
         };
       }),

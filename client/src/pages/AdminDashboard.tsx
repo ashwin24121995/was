@@ -145,6 +145,7 @@ function WebhookAccountsTab() {
     const formData = new FormData(e.currentTarget);
     createMutation.mutate({
       name: formData.get("name") as string,
+      apiKey: formData.get("apiKey") as string,
       webhookUrl: formData.get("webhookUrl") as string || undefined,
       phoneNumber: formData.get("phoneNumber") as string || undefined,
     });
@@ -196,6 +197,10 @@ function WebhookAccountsTab() {
                   <div>
                     <Label htmlFor="name">Account Name *</Label>
                     <Input id="name" name="name" required />
+                  </div>
+                  <div>
+                    <Label htmlFor="apiKey">WASender API Key *</Label>
+                    <Input id="apiKey" name="apiKey" placeholder="Enter your WASender API key" required />
                   </div>
                   <div>
                     <Label htmlFor="webhookUrl">Webhook URL (Optional)</Label>
