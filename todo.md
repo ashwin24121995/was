@@ -111,4 +111,10 @@
 - [x] Update chat.sendMessage router to use WASender API
 - [ ] Test sending messages from agent dashboard
 - [ ] Test receiving messages via webhook
-- [ ] Push to GitHub and deploy to Railway
+- [x] Push to GitHub and deploy to Railway
+
+## Agent Login Page Fix
+- [x] Create agent login page (client/src/pages/AgentLogin.tsx)
+- [x] Add /agent-login route to App.tsx
+- [ ] Test agent login flow
+- [ ] Push to GitHub and deploy

@@ -15,6 +15,7 @@ function Router() {
       <Route path="/" component={AdminLogin} />
       <Route path="/login" component={AdminLogin} />
       <Route path="/agent/login" component={AgentLogin} />
+      <Route path="/agent-login" component={AgentLogin} />
       <Route path="/admin" component={AdminDashboard} />
       <Route path="/agent" component={AgentDashboard} />
       <Route path="/404" component={NotFound} />
