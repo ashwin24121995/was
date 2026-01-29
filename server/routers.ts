@@ -318,6 +318,7 @@ export const appRouter = router({
         z.object({
           name: z.string().min(1, "Name is required"),
           apiKey: z.string().min(1, "API Key is required"),
+          webhookSecret: z.string().min(1, "Webhook Secret is required"),
           webhookUrl: z.string().url().optional(),
           phoneNumber: z.string().optional(),
         })
@@ -326,6 +327,7 @@ export const appRouter = router({
         const accountId = await createWebhookAccount({
           name: input.name,
           apiKey: input.apiKey,
+          webhookSecret: input.webhookSecret,
           webhookUrl: input.webhookUrl,
           phoneNumber: input.phoneNumber,
           status: "active",

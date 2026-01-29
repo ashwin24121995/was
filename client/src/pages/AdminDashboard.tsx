@@ -146,6 +146,7 @@ function WebhookAccountsTab() {
     createMutation.mutate({
       name: formData.get("name") as string,
       apiKey: formData.get("apiKey") as string,
+      webhookSecret: formData.get("webhookSecret") as string,
       webhookUrl: formData.get("webhookUrl") as string || undefined,
       phoneNumber: formData.get("phoneNumber") as string || undefined,
     });
@@ -201,6 +202,13 @@ function WebhookAccountsTab() {
                   <div>
                     <Label htmlFor="apiKey">WASender API Key *</Label>
                     <Input id="apiKey" name="apiKey" placeholder="Enter your WASender API key" required />
+                  </div>
+                  <div>
+                    <Label htmlFor="webhookSecret">Webhook Secret *</Label>
+                    <Input id="webhookSecret" name="webhookSecret" placeholder="Enter webhook secret" required />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Used to validate incoming webhook requests from WaSender
+                    </p>
                   </div>
                   <div>
                     <Label htmlFor="webhookUrl">Webhook URL (Optional)</Label>
@@ -694,8 +702,16 @@ function WebhookLogsTab() {
 
 function SettingsTab() {
   const utils = trpc.useUtils();
-
   const { data: settings } = trpc.settings.getAll.useQuery();
+  const [webhookBaseUrl, setWebhookBaseUrl] = useState("");
+  const [wasenderApiUrl, setWasenderApiUrl] = useState("https://www.wasenderapi.com");
+
+  useEffect(() => {
+    if (settings) {
+      setWebhookBaseUrl(settings.find((s) => s.key === "webhook_base_url")?.value || "");
+      setWasenderApiUrl(settings.find((s) => s.key === "wasender_api_url")?.value || "https://www.wasenderapi.com");
+    }
+  }, [settings]);
 
   const setSettingMutation = trpc.settings.set.useMutation({
     onSuccess: () => {
@@ -704,48 +720,213 @@ function SettingsTab() {
     },
   });
 
-  const handleSaveSetting = (key: string, value: string) => {
-    setSettingMutation.mutate({ key, value });
+  const handleSaveWebhookUrl = () => {
+    if (!webhookBaseUrl) {
+      toast.error("Webhook Base URL is required");
+      return;
+    }
+    setSettingMutation.mutate({ key: "webhook_base_url", value: webhookBaseUrl });
+  };
+
+  const handleSaveWasenderUrl = () => {
+    setSettingMutation.mutate({ key: "wasender_api_url", value: wasenderApiUrl });
+  };
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    toast.success("Copied to clipboard");
   };
 
   return (
-    <Card className="mt-4">
-      <CardHeader>
-        <CardTitle>System Settings</CardTitle>
-        <CardDescription>Configure system-wide preferences</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-6">
+    <div className="space-y-6 mt-4">
+      {/* Webhook Base URL Configuration */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Webhook Base URL</CardTitle>
+          <CardDescription>
+            Configure the base URL for your webhook endpoint (e.g., your domain with HTTPS)
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
           <div>
-            <Label htmlFor="company-name">Company Name</Label>
-            <Input
-              id="company-name"
-              defaultValue={settings?.find((s) => s.key === "company_name")?.value || ""}
-              onBlur={(e) => handleSaveSetting("company_name", e.target.value)}
-            />
+            <Label htmlFor="webhook-base-url">Base URL</Label>
+            <div className="flex gap-2 mt-2">
+              <Input
+                id="webhook-base-url"
+                placeholder="https://your-domain.com"
+                value={webhookBaseUrl}
+                onChange={(e) => setWebhookBaseUrl(e.target.value)}
+              />
+              <Button onClick={handleSaveWebhookUrl}>Save</Button>
+            </div>
+            <p className="text-sm text-muted-foreground mt-2">
+              Use HTTPS for production. For development, use the dev server URL. For production, deploy the app and use your Railway URL.
+            </p>
           </div>
 
+          {webhookBaseUrl && (
+            <div className="space-y-3 p-4 bg-muted rounded-lg">
+              <h4 className="font-semibold text-sm">Generated Endpoints</h4>
+              
+              <div>
+                <Label className="text-xs">Webhook Endpoint</Label>
+                <div className="flex items-center gap-2 mt-1">
+                  <code className="flex-1 text-xs bg-background p-2 rounded border">
+                    {webhookBaseUrl}/api/webhook/incoming?apiKey=YOUR_API_KEY
+                  </code>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => copyToClipboard(`${webhookBaseUrl}/api/webhook/incoming?apiKey=YOUR_API_KEY`)}
+                  >
+                    <Copy className="h-4 w-4" />
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Configure this in WaSender. Replace YOUR_API_KEY with your webhook account's API key.
+                </p>
+              </div>
+
+              <div>
+                <Label className="text-xs">API Endpoint</Label>
+                <div className="flex items-center gap-2 mt-1">
+                  <code className="flex-1 text-xs bg-background p-2 rounded border">
+                    {webhookBaseUrl}/api/trpc
+                  </code>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => copyToClipboard(`${webhookBaseUrl}/api/trpc`)}
+                  >
+                    <Copy className="h-4 w-4" />
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  tRPC API endpoint for client-server communication
+                </p>
+              </div>
+
+              <div>
+                <Label className="text-xs">Health Check Endpoint</Label>
+                <div className="flex items-center gap-2 mt-1">
+                  <code className="flex-1 text-xs bg-background p-2 rounded border">
+                    {webhookBaseUrl}/api/health
+                  </code>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => copyToClipboard(`${webhookBaseUrl}/api/health`)}
+                  >
+                    <Copy className="h-4 w-4" />
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Use this to monitor server health and uptime
+                </p>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* WaSender API Configuration */}
+      <Card>
+        <CardHeader>
+          <CardTitle>WaSender API Configuration</CardTitle>
+          <CardDescription>
+            Configure the WaSender API base URL for sending messages, images, and other operations
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
           <div>
-            <Label htmlFor="support-email">Support Email</Label>
-            <Input
-              id="support-email"
-              type="email"
-              defaultValue={settings?.find((s) => s.key === "support_email")?.value || ""}
-              onBlur={(e) => handleSaveSetting("support_email", e.target.value)}
-            />
+            <Label htmlFor="wasender-api-url">WaSender API Base URL</Label>
+            <div className="flex gap-2 mt-2">
+              <Input
+                id="wasender-api-url"
+                value={wasenderApiUrl}
+                onChange={(e) => setWasenderApiUrl(e.target.value)}
+              />
+              <Button onClick={handleSaveWasenderUrl}>Save</Button>
+            </div>
+            <p className="text-sm text-muted-foreground mt-2">
+              Default: https://www.wasenderapi.com
+            </p>
           </div>
 
-          <div>
-            <Label htmlFor="welcome-message">Default Welcome Message</Label>
-            <Textarea
-              id="welcome-message"
-              rows={4}
-              defaultValue={settings?.find((s) => s.key === "welcome_message")?.value || ""}
-              onBlur={(e) => handleSaveSetting("welcome_message", e.target.value)}
-            />
+          {wasenderApiUrl && (
+            <div className="space-y-3 p-4 bg-muted rounded-lg">
+              <h4 className="font-semibold text-sm">Generated WaSender API Endpoints</h4>
+              
+              {[
+                { label: "Send Message", path: "/api/send-message" },
+                { label: "Send Image", path: "/api/send-image" },
+                { label: "Send File", path: "/api/send-file" },
+                { label: "Send Audio", path: "/api/send-audio" },
+                { label: "Send Video", path: "/api/send-video" },
+                { label: "Get Message Info", path: "/api/get-message-info" },
+                { label: "Get Session Info", path: "/api/get-session-info" },
+              ].map((endpoint) => (
+                <div key={endpoint.path}>
+                  <Label className="text-xs">{endpoint.label}</Label>
+                  <div className="flex items-center gap-2 mt-1">
+                    <code className="flex-1 text-xs bg-background p-2 rounded border">
+                      {wasenderApiUrl}{endpoint.path}
+                    </code>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => copyToClipboard(`${wasenderApiUrl}${endpoint.path}`)}
+                    >
+                      <Copy className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Quick Setup Guide */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Quick Setup Guide</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ol className="list-decimal list-inside space-y-2 text-sm">
+            <li>Set your base URL above (development or production)</li>
+            <li>All endpoints are automatically generated</li>
+            <li>Copy the webhook endpoint and configure it in WaSender</li>
+            <li>Replace YOUR_API_KEY with your actual API key</li>
+            <li>Use agent authentication for secure access</li>
+          </ol>
+        </CardContent>
+      </Card>
+
+      {/* About */}
+      <Card>
+        <CardHeader>
+          <CardTitle>About</CardTitle>
+          <CardDescription>Application information</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-2 text-sm">
+          <div className="flex justify-between">
+            <span className="text-muted-foreground">Application:</span>
+            <span className="font-medium">WaSender Admin Portal</span>
           </div>
-        </div>
-      </CardContent>
-    </Card>
+          <div className="flex justify-between">
+            <span className="text-muted-foreground">Version:</span>
+            <span className="font-medium">1.0.0</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-muted-foreground">Environment:</span>
+            <span className="font-medium">{import.meta.env.MODE}</span>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
   );
 }
+
+// Placeholder component for Settings Tab (old version removed
+

@@ -29,6 +29,7 @@ export const webhookAccounts = mysqlTable("webhook_accounts", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
   apiKey: varchar("api_key", { length: 64 }).notNull().unique(),
+  webhookSecret: varchar("webhook_secret", { length: 64 }).notNull(), // WaSender webhook secret for validation
   webhookUrl: text("webhook_url"),
   phoneNumber: varchar("phone_number", { length: 20 }),
   status: mysqlEnum("status", ["active", "inactive"]).default("active").notNull(),

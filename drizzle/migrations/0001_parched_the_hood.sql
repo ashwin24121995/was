@@ -1,0 +1,1 @@
+ALTER TABLE `webhook_accounts` ADD `webhook_secret` varchar(64) NOT NULL;
