@@ -86,3 +86,8 @@
 - [x] Force Railway to rebuild with clean cache (added rm -rf dist)
 - [x] Ensure bcrypt native module compiles on Railway (added postinstall script)
 - [x] Add postinstall rebuild script to package.json
+
+## Railway CDN Asset Caching Issue
+- [x] Add timestamp-based cache busting to Vite build output
+- [ ] Force Railway CDN to serve new JavaScript assets
+- [ ] Verify crypto error is resolved after new build deploys
