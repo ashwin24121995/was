@@ -3,6 +3,12 @@ import { Server as SocketIOServer } from "socket.io";
 import jwt from "jsonwebtoken";
 import cookie from "cookie";
 
+let ioInstance: SocketIOServer | null = null;
+
+export function getIO(): SocketIOServer | null {
+  return ioInstance;
+}
+
 export function initializeSocketIO(server: HTTPServer) {
   const io = new SocketIOServer(server, {
     cors: {
@@ -77,5 +83,6 @@ export function initializeSocketIO(server: HTTPServer) {
     });
   });
 
+  ioInstance = io;
   return io;
 }
