@@ -210,3 +210,12 @@
 
 - [ ] Fix WASender API client to use correct endpoint /api/send-message instead of /api/send-text
 - [ ] Test Start New Chat feature after deployment
+
+## Bug Fix: Webhook Payload Parsing
+
+- [ ] Fix webhook handler to use correct WASender payload structure
+  - Change from data.message (singular) to data.messages (plural, object not array)
+  - Use data.messages.messageBody instead of data.message.body
+  - Use data.messages.key.cleanedSenderPn instead of data.message.from
+  - Handle remoteJid correctly (can be LID, not always phone number)
+- [ ] Test incoming messages after fix

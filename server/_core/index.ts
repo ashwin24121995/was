@@ -74,19 +74,50 @@ async function startServer() {
         return;
       }
 
-      // Parse WaSender webhook payload
-      const { from, to, message, type, media_url, timestamp } = req.body;
+      // Parse WaSender webhook payload (Updated structure)
+      // Payload: { event: "messages.received", data: { messages: { key: {...}, messageBody: "...", message: {...} } } }
+      const messageData = req.body.data?.messages;
+      
+      if (!messageData) {
+        res.status(400).json({ error: "Invalid payload structure" });
+        return;
+      }
+
+      // Extract fields from the new payload structure
+      const from = messageData.key?.cleanedSenderPn || messageData.key?.remoteJid;
+      const messageBody = messageData.messageBody || '';
+      const timestamp = req.body.timestamp ? new Date(req.body.timestamp * 1000) : new Date();
+      
+      // Determine message type and media URL
+      let messageType = 'text';
+      let mediaUrl = null;
+      
+      if (messageData.message) {
+        if (messageData.message.imageMessage) {
+          messageType = 'image';
+          mediaUrl = messageData.message.imageMessage.url;
+        } else if (messageData.message.videoMessage) {
+          messageType = 'video';
+          mediaUrl = messageData.message.videoMessage.url;
+        } else if (messageData.message.audioMessage) {
+          messageType = 'audio';
+          mediaUrl = messageData.message.audioMessage.url;
+        } else if (messageData.message.documentMessage) {
+          messageType = 'document';
+          mediaUrl = messageData.message.documentMessage.url;
+        }
+      }
 
       // Log the webhook
       await createWebhookLog({
         accountId: account.id,
         direction: "inbound",
         fromNumber: from,
-        toNumber: to,
-        message: message || '',
+        toNumber: account.phoneNumber || '',
+        message: messageBody,
         metadata: JSON.stringify(req.body),
         status: "received",
-        timestamp: timestamp ? new Date(timestamp) : new Date(),
+        timestamp: timestamp,
       });
 
       // Create or get conversation
@@ -100,9 +131,9 @@ async function startServer() {
       await createMessage({
         conversationId: conversation.id,
         sender: "customer",
-        content: message || '',
-        messageType: type || "text",
-        mediaUrl: media_url,
+        content: messageBody,
+        messageType: messageType,
+        mediaUrl: mediaUrl,
         status: "delivered",
       });
 
@@ -114,10 +145,10 @@ async function startServer() {
           conversationId: conversation.id,
           message: {
             sender: "customer",
-            content: message || '',
-            messageType: type || "text",
-            mediaUrl: media_url,
-            timestamp: new Date(),
+            content: messageBody,
+            messageType: messageType,
+            mediaUrl: mediaUrl,
+            timestamp: timestamp,
           },
         });
       }
