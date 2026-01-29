@@ -1,6 +1,6 @@
 import { Server as HTTPServer } from "http";
 import { Server as SocketIOServer } from "socket.io";
-import * as jose from "jose";
+import jwt from "jsonwebtoken";
 import cookie from "cookie";
 
 export function initializeSocketIO(server: HTTPServer) {
@@ -35,10 +35,8 @@ export function initializeSocketIO(server: HTTPServer) {
       }
 
       // Verify JWT
-      const secret = new TextEncoder().encode(
-        process.env.JWT_SECRET || "default-secret-change-in-production"
-      );
-      const { payload } = await jose.jwtVerify(token, secret);
+      const secret = process.env.JWT_SECRET || "default-secret-change-in-production";
+      const payload = jwt.verify(token, secret) as { userId: number; email: string };
 
       // Attach user to socket
       socket.data.user = payload;

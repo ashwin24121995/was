@@ -2,7 +2,7 @@ import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { eq, desc } from "drizzle-orm";
 import argon2 from "argon2";
-import * as jose from "jose";
+import jwt from "jsonwebtoken";
 // Custom random string generator (no crypto dependency)
 function generateRandomString(length: number): string {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
@@ -31,19 +31,17 @@ import {
 import { users, webhookAccounts, webhookLogs, InsertWebhookAccount, InsertWebhookLog } from "../drizzle/schema";
 
 // Helper to generate JWT token
-async function generateJWT(user: { id: number; name: string; email: string; role: string }) {
-  const secret = new TextEncoder().encode(process.env.JWT_SECRET || "default-secret-change-in-production");
-  const token = await new jose.SignJWT({
+function generateJWT(user: { id: number; name: string; email: string; role: string }) {
+  const secret = process.env.JWT_SECRET || "default-secret-change-in-production";
+  const token = jwt.sign({
     userId: user.id,
     name: user.name,
     email: user.email,
     role: user.role,
     loginMethod: "password",
-  })
-    .setProtectedHeader({ alg: "HS256" })
-    .setIssuedAt()
-    .setExpirationTime("7d")
-    .sign(secret);
+  }, secret, {
+    expiresIn: "7d",
+  });
   
   return token;
 }

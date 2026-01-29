@@ -101,3 +101,10 @@
 - [x] Replace nanoid with crypto-free alternative
 - [x] Use custom random string generator for API keys
 - [ ] Push to GitHub and test on Railway
+
+## Exhaustive Crypto Dependency Search
+- [x] Check package.json for all crypto-dependent packages - found jose and nanoid
+- [x] Search jose (JWT library) for crypto usage - confirmed it uses Web Crypto API
+- [x] Check if any other dependencies use crypto internally
+- [x] Replace jose with jsonwebtoken (Node.js 18 compatible)
+- [x] Remove nanoid from package.json

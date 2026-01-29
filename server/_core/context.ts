@@ -1,6 +1,6 @@
 import type { CreateExpressContextOptions } from "@trpc/server/adapters/express";
 import type { User } from "../../drizzle/schema";
-import * as jose from "jose";
+import jwt from "jsonwebtoken";
 import cookie from "cookie";
 import { getUserById } from "../db";
 
@@ -22,8 +22,8 @@ export async function createContext(
 
   if (token) {
     try {
-      const secret = new TextEncoder().encode(process.env.JWT_SECRET || "default-secret-change-in-production");
-      const { payload } = await jose.jwtVerify(token, secret);
+      const secret = process.env.JWT_SECRET || "default-secret-change-in-production";
+      const payload = jwt.verify(token, secret) as { userId: number };
 
       // Get user from database
       const dbUser = await getUserById(payload.userId as number);
