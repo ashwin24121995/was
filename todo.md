@@ -185,4 +185,23 @@
 - [x] Update webhook receiver to validate X-Webhook-Signature header
 - [x] Remove webhook_secret query parameter validation
 - [ ] Test webhook with WaSender
-- [ ] Push fix to GitHub and deploy
+- [x] Push fix to GitHub and deploy
+
+## Test Message Not Appearing Debug
+- [ ] Check webhook logs in admin dashboard
+- [ ] Check Railway deployment logs for errors
+- [ ] Verify WaSender webhook configuration is correct
+- [ ] Test webhook endpoint manually with curl
+- [ ] Check Socket.IO connection in agent dashboard
+- [ ] Verify agent-account linking is correct
+
+## New Feature: Agent-Initiated Conversations
+
+## New Feature: Agent-Initiated Conversations
+
+- [x] Add tRPC mutation for agents to start new conversations with phone numbers
+- [x] Add "Start New Chat" button in agent dashboard sidebar
+- [x] Create dialog/modal for phone number input with validation
+- [x] Integrate with WASender API to send first message
+- [x] Update conversation list in real-time when new chat is created
+- [ ] Test complete flow: enter phone number → send message → receive reply

@@ -40,6 +40,7 @@ import {
   getConversationById,
   getConversationByPhone,
   createConversation,
+  getOrCreateConversation,
   updateConversation,
   deleteConversation,
   markConversationAsViewed,
@@ -514,6 +515,12 @@ export const appRouter = router({
       .query(async ({ input }) => {
         return await getAccountAgents(input.accountId);
       }),
+
+    // Agent-accessible endpoint to get their own linked accounts
+    getMyLinkedAccounts: agentProcedure
+      .query(async ({ ctx }) => {
+        return await getAgentAccounts(ctx.user.id);
+      }),
   }),
 
   // ============================================================================
@@ -618,6 +625,80 @@ export const appRouter = router({
       .mutation(async ({ input }) => {
         await updateCustomerName(input.conversationId, input.customerName);
         return { success: true };
+      }),
+
+    startNewChat: agentProcedure
+      .input(
+        z.object({
+          accountId: z.number(),
+          phoneNumber: z.string().min(1, "Phone number is required"),
+          initialMessage: z.string().min(1, "Initial message is required"),
+        })
+      )
+      .mutation(async ({ input, ctx }) => {
+        // Verify agent has access to this account
+        const accounts = await getAgentAccounts(ctx.user.id);
+        const hasAccess = accounts.some(a => a.id === input.accountId);
+        
+        if (!hasAccess) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "Access denied to this account",
+          });
+        }
+
+        // Get webhook account to get API key
+        const account = await getWebhookAccountById(input.accountId);
+        if (!account) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Webhook account not found",
+          });
+        }
+
+        // Create or get conversation
+        const conversation = await getOrCreateConversation({
+          accountId: input.accountId,
+          customerPhone: input.phoneNumber,
+          customerName: input.phoneNumber,
+        });
+
+        // Send message via WASender API
+        const { createWASenderClient } = await import("./wasender-api.js");
+        const wasenderClient = createWASenderClient(account.apiKey);
+
+        const apiResponse = await wasenderClient.sendTextMessage({
+          to: input.phoneNumber,
+          message: input.initialMessage,
+        });
+
+        if (!apiResponse?.success) {
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: apiResponse?.error || "Failed to send message",
+          });
+        }
+
+        // Save message to database
+        await createMessage({
+          conversationId: conversation.id,
+          direction: "outbound",
+          content: input.initialMessage,
+          agentId: ctx.user.id,
+          timestamp: new Date(),
+        });
+
+        // Update conversation last message time and claim it
+        await updateConversation(conversation.id, {
+          lastMessageAt: new Date(),
+        });
+        await claimConversation(conversation.id, ctx.user.id);
+
+        return { 
+          success: true, 
+          conversationId: conversation.id,
+          conversation,
+        };
       }),
   }),
 

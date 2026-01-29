@@ -22,7 +22,8 @@ import {
   X,
   StickyNote,
   Tag,
-  Trash2
+  Trash2,
+  MessageSquarePlus
 } from "lucide-react";
 import { io, Socket } from "socket.io-client";
 
@@ -116,7 +117,8 @@ export default function AgentDashboard() {
       <div className="flex-1 flex overflow-hidden">
         {/* Conversation List */}
         <div className="w-80 bg-white border-r border-gray-200 flex flex-col">
-          <div className="p-4 border-b border-gray-200">
+          <div className="p-4 border-b border-gray-200 space-y-3">
+            <StartNewChatDialog />
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
               <Input
@@ -667,5 +669,118 @@ function TagsSidebar({ conversationId, onClose }: { conversationId: number; onCl
         </div>
       </div>
     </div>
+  );
+}
+
+// ============================================================================
+// START NEW CHAT DIALOG
+// ============================================================================
+function StartNewChatDialog() {
+  const [open, setOpen] = useState(false);
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [initialMessage, setInitialMessage] = useState("");
+  const [selectedAccountId, setSelectedAccountId] = useState<number | null>(null);
+  const utils = trpc.useUtils();
+
+  // Get agent's linked accounts
+  const { data: accounts } = trpc.agents.getMyLinkedAccounts.useQuery();
+
+  const startChatMutation = trpc.conversations.startNewChat.useMutation({
+    onSuccess: (data) => {
+      toast.success("Chat started successfully!");
+      setOpen(false);
+      setPhoneNumber("");
+      setInitialMessage("");
+      setSelectedAccountId(null);
+      // Refresh conversation list
+      utils.conversations.list.invalidate();
+    },
+    onError: (error) => {
+      toast.error(error.message || "Failed to start chat");
+    },
+  });
+
+  const handleStartChat = () => {
+    if (!selectedAccountId) {
+      toast.error("Please select an account");
+      return;
+    }
+    if (!phoneNumber.trim()) {
+      toast.error("Please enter a phone number");
+      return;
+    }
+    if (!initialMessage.trim()) {
+      toast.error("Please enter an initial message");
+      return;
+    }
+
+    startChatMutation.mutate({
+      accountId: selectedAccountId,
+      phoneNumber: phoneNumber.trim(),
+      initialMessage: initialMessage.trim(),
+    });
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button className="w-full" variant="default">
+          <MessageSquarePlus className="w-4 h-4 mr-2" />
+          Start New Chat
+        </Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Start New Conversation</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4 py-4">
+          <div className="space-y-2">
+            <Label htmlFor="account">Select Account</Label>
+            <Select
+              value={selectedAccountId?.toString() || ""}
+              onValueChange={(value) => setSelectedAccountId(Number(value))}
+            >
+              <SelectTrigger id="account">
+                <SelectValue placeholder="Choose an account" />
+              </SelectTrigger>
+              <SelectContent>
+                {accounts?.map((account) => (
+                  <SelectItem key={account.id} value={account.id.toString()}>
+                    {account.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="phone">Phone Number</Label>
+            <Input
+              id="phone"
+              placeholder="+1234567890"
+              value={phoneNumber}
+              onChange={(e) => setPhoneNumber(e.target.value)}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="message">Initial Message</Label>
+            <Textarea
+              id="message"
+              placeholder="Type your first message..."
+              value={initialMessage}
+              onChange={(e) => setInitialMessage(e.target.value)}
+              rows={4}
+            />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setOpen(false)}>
+            Cancel
+          </Button>
+          <Button onClick={handleStartChat} disabled={startChatMutation.isPending}>
+            {startChatMutation.isPending ? "Starting..." : "Start Chat"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
