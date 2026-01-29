@@ -952,6 +952,7 @@ export const appRouter = router({
       .input(
         z.object({
           apiKey: z.string(),
+          webhookSecret: z.string(),
           from: z.string(),
           message: z.string(),
           messageType: z.enum(["text", "image", "document"]).default("text"),
@@ -966,6 +967,14 @@ export const appRouter = router({
           throw new TRPCError({
             code: "UNAUTHORIZED",
             message: "Invalid API key",
+          });
+        }
+
+        // Verify webhook secret
+        if (account.webhookSecret !== input.webhookSecret) {
+          throw new TRPCError({
+            code: "UNAUTHORIZED",
+            message: "Invalid webhook secret",
           });
         }
 

@@ -134,11 +134,11 @@
 
 ## Missing Features Implementation
 - [x] Add webhook_secret field to webhook_accounts table schema
-- [ ] Add settings table to store webhook base URL and WaSender API URL
-- [ ] Update webhook account creation form to include webhook secret field
-- [ ] Implement Settings page with URL configuration and endpoint generation
+- [x] Add settings table to store webhook base URL and WaSender API URL
+- [x] Update webhook account creation form to include webhook secret field
+- [x] Implement Settings page with URL configuration and endpoint generation
 - [ ] Implement Dashboard page with statistics (total accounts, active accounts, messages sent/received)
-- [ ] Update webhook receiver to validate webhook secret
+- [x] Update webhook receiver to validate webhook secret
 - [ ] Add webhook secret to existing webhook account (165a269286b3e49c924bb3573704a672)
 - [ ] Test complete webhook flow with WaSender
-- [ ] Push all changes to GitHub/Railway
+- [x] Push all changes to GitHub/Railway
