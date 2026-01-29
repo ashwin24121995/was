@@ -3,6 +3,7 @@ import { TRPCError } from "@trpc/server";
 import { eq, desc } from "drizzle-orm";
 import argon2 from "argon2";
 import jwt from "jsonwebtoken";
+
 // Custom random string generator (no crypto dependency)
 function generateRandomString(length: number): string {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
@@ -12,6 +13,7 @@ function generateRandomString(length: number): string {
   }
   return result;
 }
+
 import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
@@ -20,15 +22,58 @@ import {
   getUserByEmail, 
   getUserById, 
   createUser,
-  getWebhookAccounts,
+  updateUser,
+  deleteUser,
+  getAllAgents,
+  getAllWebhookAccounts,
   getWebhookAccountById,
   getWebhookAccountByApiKey,
-  getWebhookLogs,
+  createWebhookAccount,
+  updateWebhookAccount,
+  deleteWebhookAccount,
+  linkAgentToAccount,
+  unlinkAgentFromAccount,
+  getAgentAccounts,
+  getAccountAgents,
+  getConversationsByAccountIds,
+  getConversationById,
+  getConversationByPhone,
+  createConversation,
+  updateConversation,
+  deleteConversation,
+  markConversationAsViewed,
+  markConversationAsRead,
+  claimConversation,
+  releaseConversation,
+  updateCustomerName,
+  getMessagesByConversationId,
+  createMessage,
+  createWebhookLog,
   getWebhookLogsByAccountId,
-  getWebhookLogsByAgentId,
+  createTimeLog,
+  getActiveTimeLog,
+  updateTimeLog,
+  getAgentTimeLogs,
+  createBreak,
+  getActiveBreak,
+  updateBreak,
+  getQuickReplyTemplates,
+  createQuickReplyTemplate,
+  updateQuickReplyTemplate,
+  deleteQuickReplyTemplate,
+  getConversationNotes,
+  createConversationNote,
+  updateConversationNote,
+  deleteConversationNote,
+  getConversationTags,
+  addConversationTag,
+  removeConversationTag,
+  getSetting,
+  setSetting,
+  getAllSettings,
   getDb
 } from "./db";
-import { users, webhookAccounts, webhookLogs, InsertWebhookAccount, InsertWebhookLog } from "../drizzle/schema";
+import { users } from "../drizzle/schema";
 
 // Helper to generate JWT token
 function generateJWT(user: { id: number; name: string; email: string; role: string }) {
@@ -65,6 +110,9 @@ const agentProcedure = protectedProcedure.use(({ ctx, next }) => {
 export const appRouter = router({
   system: systemRouter,
   
+  // ============================================================================
+  // AUTHENTICATION
+  // ============================================================================
   auth: router({
     // Get current user
     me: publicProcedure.query(opts => opts.ctx.user),
@@ -79,7 +127,6 @@ export const appRouter = router({
         })
       )
       .mutation(async ({ input, ctx }) => {
-        // Check if user already exists
         const existingUser = await getUserByEmail(input.email);
         if (existingUser) {
           throw new TRPCError({
@@ -88,10 +135,8 @@ export const appRouter = router({
           });
         }
 
-        // Hash password
         const hashedPassword = await argon2.hash(input.password);
 
-        // Create admin user
         await createUser({
           name: input.name,
           email: input.email,
@@ -100,7 +145,6 @@ export const appRouter = router({
           loginMethod: "password",
         });
 
-        // Get the created user
         const user = await getUserByEmail(input.email);
         if (!user) {
           throw new TRPCError({
@@ -109,14 +153,12 @@ export const appRouter = router({
           });
         }
 
-        // Generate JWT token
-        const token = await generateJWT(user);
+        const token = generateJWT(user);
 
-        // Set cookie
         const cookieOptions = getSessionCookieOptions(ctx.req);
         ctx.res.cookie("admin_session", token, {
           ...cookieOptions,
-          maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+          maxAge: 7 * 24 * 60 * 60 * 1000,
         });
 
         return {
@@ -139,7 +181,6 @@ export const appRouter = router({
         })
       )
       .mutation(async ({ input, ctx }) => {
-        // Find user by email
         const user = await getUserByEmail(input.email);
 
         if (!user || !user.password) {
@@ -149,7 +190,6 @@ export const appRouter = router({
           });
         }
 
-        // Verify password
         const isValid = await argon2.verify(user.password, input.password);
 
         if (!isValid) {
@@ -159,7 +199,6 @@ export const appRouter = router({
           });
         }
 
-        // Check if user is admin
         if (user.role !== "admin") {
           throw new TRPCError({
             code: "FORBIDDEN",
@@ -167,17 +206,14 @@ export const appRouter = router({
           });
         }
 
-        // Generate JWT token
-        const token = await generateJWT(user);
+        const token = generateJWT(user);
 
-        // Set cookie
         const cookieOptions = getSessionCookieOptions(ctx.req);
         ctx.res.cookie("admin_session", token, {
           ...cookieOptions,
-          maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+          maxAge: 7 * 24 * 60 * 60 * 1000,
         });
 
-        // Update last signed in
         const db = await getDb();
         if (db) {
           await db.update(users).set({ lastSignedIn: new Date() }).where(eq(users.id, user.id));
@@ -203,7 +239,6 @@ export const appRouter = router({
         })
       )
       .mutation(async ({ input, ctx }) => {
-        // Find user by email
         const user = await getUserByEmail(input.email);
 
         if (!user || !user.password) {
@@ -213,7 +248,6 @@ export const appRouter = router({
           });
         }
 
-        // Verify password
         const isValid = await argon2.verify(user.password, input.password);
 
         if (!isValid) {
@@ -223,7 +257,6 @@ export const appRouter = router({
           });
         }
 
-        // Check if user is agent
         if (user.role !== "agent") {
           throw new TRPCError({
             code: "FORBIDDEN",
@@ -231,17 +264,14 @@ export const appRouter = router({
           });
         }
 
-        // Generate JWT token
-        const token = await generateJWT(user);
+        const token = generateJWT(user);
 
-        // Set cookie
         const cookieOptions = getSessionCookieOptions(ctx.req);
         ctx.res.cookie("agent_session", token, {
           ...cookieOptions,
-          maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+          maxAge: 7 * 24 * 60 * 60 * 1000,
         });
 
-        // Update last signed in
         const db = await getDb();
         if (db) {
           await db.update(users).set({ lastSignedIn: new Date() }).where(eq(users.id, user.id));
@@ -269,10 +299,12 @@ export const appRouter = router({
     }),
   }),
 
-  // Webhook account management (admin only)
+  // ============================================================================
+  // WEBHOOK ACCOUNT MANAGEMENT (Admin Only)
+  // ============================================================================
   webhookAccounts: router({
     list: adminProcedure.query(async () => {
-      return await getWebhookAccounts();
+      return await getAllWebhookAccounts();
     }),
 
     getById: adminProcedure
@@ -290,30 +322,20 @@ export const appRouter = router({
         })
       )
       .mutation(async ({ input }) => {
-        const db = await getDb();
-        if (!db) {
-          throw new TRPCError({
-            code: "INTERNAL_SERVER_ERROR",
-            message: "Database not available",
-          });
-        }
-
-        // Generate unique API key
         const apiKey = generateRandomString(32);
 
-        const account: InsertWebhookAccount = {
+        const accountId = await createWebhookAccount({
           name: input.name,
           apiKey,
           webhookUrl: input.webhookUrl,
           phoneNumber: input.phoneNumber,
           status: "active",
-        };
-
-        await db.insert(webhookAccounts).values(account);
+        });
 
         return {
           success: true,
           apiKey,
+          accountId,
         };
       }),
 
@@ -328,54 +350,138 @@ export const appRouter = router({
         })
       )
       .mutation(async ({ input }) => {
-        const db = await getDb();
-        if (!db) {
-          throw new TRPCError({
-            code: "INTERNAL_SERVER_ERROR",
-            message: "Database not available",
-          });
-        }
-
         const { id, ...updates } = input;
-        await db.update(webhookAccounts).set(updates).where(eq(webhookAccounts.id, id));
-
+        await updateWebhookAccount(id, updates);
         return { success: true };
       }),
 
     delete: adminProcedure
       .input(z.object({ id: z.number() }))
       .mutation(async ({ input }) => {
-        const db = await getDb();
-        if (!db) {
-          throw new TRPCError({
-            code: "INTERNAL_SERVER_ERROR",
-            message: "Database not available",
-          });
-        }
-
-        await db.delete(webhookAccounts).where(eq(webhookAccounts.id, input.id));
-
+        await deleteWebhookAccount(input.id);
         return { success: true };
+      }),
+
+    regenerateApiKey: adminProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input }) => {
+        const newApiKey = generateRandomString(32);
+        await updateWebhookAccount(input.id, { apiKey: newApiKey });
+        return { success: true, apiKey: newApiKey };
       }),
   }),
 
-  // Webhook logs (admin can see all, agents see only their assigned messages)
-  webhookLogs: router({
-    list: protectedProcedure
+  // ============================================================================
+  // AGENT MANAGEMENT (Admin Only)
+  // ============================================================================
+  agents: router({
+    list: adminProcedure.query(async () => {
+      return await getAllAgents();
+    }),
+
+    create: adminProcedure
       .input(
         z.object({
-          limit: z.number().default(100),
-          offset: z.number().default(0),
+          name: z.string().min(1, "Name is required"),
+          email: z.string().email("Invalid email address"),
+          password: z.string().min(6, "Password must be at least 6 characters"),
         })
       )
-      .query(async ({ input, ctx }) => {
-        if (ctx.user.role === "admin") {
-          return await getWebhookLogs(input.limit, input.offset);
-        } else {
-          return await getWebhookLogsByAgentId(ctx.user.id, input.limit);
+      .mutation(async ({ input }) => {
+        const existingUser = await getUserByEmail(input.email);
+        if (existingUser) {
+          throw new TRPCError({
+            code: "CONFLICT",
+            message: "Email already registered",
+          });
         }
+
+        const hashedPassword = await argon2.hash(input.password);
+
+        const agentId = await createUser({
+          name: input.name,
+          email: input.email,
+          password: hashedPassword,
+          role: "agent",
+          loginMethod: "password",
+        });
+
+        return { success: true, agentId };
       }),
 
+    update: adminProcedure
+      .input(
+        z.object({
+          id: z.number(),
+          name: z.string().optional(),
+          email: z.string().email().optional(),
+        })
+      )
+      .mutation(async ({ input }) => {
+        const { id, ...updates } = input;
+        
+        if (updates.email) {
+          const existing = await getUserByEmail(updates.email);
+          if (existing && existing.id !== id) {
+            throw new TRPCError({
+              code: "CONFLICT",
+              message: "Email already in use",
+            });
+          }
+        }
+        
+        await updateUser(id, updates);
+        return { success: true };
+      }),
+
+    delete: adminProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input }) => {
+        await deleteUser(input.id);
+        return { success: true };
+      }),
+
+    linkToAccount: adminProcedure
+      .input(
+        z.object({
+          agentId: z.number(),
+          accountId: z.number(),
+        })
+      )
+      .mutation(async ({ input }) => {
+        await linkAgentToAccount(input.agentId, input.accountId);
+        return { success: true };
+      }),
+
+    unlinkFromAccount: adminProcedure
+      .input(
+        z.object({
+          agentId: z.number(),
+          accountId: z.number(),
+        })
+      )
+      .mutation(async ({ input }) => {
+        await unlinkAgentFromAccount(input.agentId, input.accountId);
+        return { success: true };
+      }),
+
+    getLinkedAccounts: adminProcedure
+      .input(z.object({ agentId: z.number() }))
+      .query(async ({ input }) => {
+        return await getAgentAccounts(input.agentId);
+      }),
+
+    getAccountAgents: adminProcedure
+      .input(z.object({ accountId: z.number() }))
+      .query(async ({ input }) => {
+        return await getAccountAgents(input.accountId);
+      }),
+  }),
+
+  // ============================================================================
+  // WEBHOOK LOGS (Admin Only)
+  // ============================================================================
+  webhookLogs: router({
     getByAccountId: adminProcedure
       .input(
         z.object({
@@ -388,46 +494,478 @@ export const appRouter = router({
       }),
   }),
 
-  // Agent management (admin only)
-  agents: router({
-    list: adminProcedure.query(async () => {
-      const db = await getDb();
-      if (!db) return [];
-
-      return await db.select().from(users).where(eq(users.role, "agent"));
-    }),
-
-    create: adminProcedure
+  // ============================================================================
+  // CONVERSATIONS (Agent)
+  // ============================================================================
+  conversations: router({
+    list: agentProcedure
       .input(
         z.object({
-          name: z.string().min(1, "Name is required"),
-          email: z.string().email("Invalid email address"),
-          password: z.string().min(6, "Password must be at least 6 characters"),
+          searchQuery: z.string().optional(),
+        })
+      )
+      .query(async ({ ctx, input }) => {
+        // Get accounts linked to this agent
+        const accounts = await getAgentAccounts(ctx.user.id);
+        const accountIds = accounts.map(a => a.id);
+        
+        if (accountIds.length === 0) {
+          return [];
+        }
+        
+        return await getConversationsByAccountIds(accountIds, input.searchQuery);
+      }),
+
+    getById: agentProcedure
+      .input(z.object({ id: z.number() }))
+      .query(async ({ input, ctx }) => {
+        const conversation = await getConversationById(input.id);
+        
+        if (!conversation) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Conversation not found",
+          });
+        }
+        
+        // Verify agent has access to this conversation's account
+        const accounts = await getAgentAccounts(ctx.user.id);
+        const hasAccess = accounts.some(a => a.id === conversation.accountId);
+        
+        if (!hasAccess) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "Access denied",
+          });
+        }
+        
+        return conversation;
+      }),
+
+    claim: agentProcedure
+      .input(z.object({ conversationId: z.number() }))
+      .mutation(async ({ input, ctx }) => {
+        await claimConversation(input.conversationId, ctx.user.id);
+        return { success: true };
+      }),
+
+    release: agentProcedure
+      .input(z.object({ conversationId: z.number() }))
+      .mutation(async ({ input }) => {
+        await releaseConversation(input.conversationId);
+        return { success: true };
+      }),
+
+    markAsViewed: agentProcedure
+      .input(z.object({ conversationId: z.number() }))
+      .mutation(async ({ input }) => {
+        await markConversationAsViewed(input.conversationId);
+        return { success: true };
+      }),
+
+    markAsRead: agentProcedure
+      .input(z.object({ conversationId: z.number() }))
+      .mutation(async ({ input }) => {
+        await markConversationAsRead(input.conversationId);
+        return { success: true };
+      }),
+
+    updateCustomerName: agentProcedure
+      .input(
+        z.object({
+          conversationId: z.number(),
+          customerName: z.string(),
         })
       )
       .mutation(async ({ input }) => {
-        // Check if user already exists
-        const existingUser = await getUserByEmail(input.email);
-        if (existingUser) {
+        await updateCustomerName(input.conversationId, input.customerName);
+        return { success: true };
+      }),
+  }),
+
+  // ============================================================================
+  // MESSAGES (Agent)
+  // ============================================================================
+  messages: router({
+    getByConversationId: agentProcedure
+      .input(z.object({ conversationId: z.number() }))
+      .query(async ({ input }) => {
+        return await getMessagesByConversationId(input.conversationId);
+      }),
+
+    send: agentProcedure
+      .input(
+        z.object({
+          conversationId: z.number(),
+          content: z.string(),
+          messageType: z.enum(["text", "image", "document"]).default("text"),
+          mediaUrl: z.string().optional(),
+        })
+      )
+      .mutation(async ({ input, ctx }) => {
+        const messageId = await createMessage({
+          conversationId: input.conversationId,
+          direction: "outbound",
+          content: input.content,
+          agentId: ctx.user.id,
+          mediaUrl: input.mediaUrl,
+          mediaType: input.messageType === "text" ? undefined : input.messageType as "image" | "document",
+          timestamp: new Date(),
+        });
+
+        return { success: true, messageId };
+      }),
+  }),
+
+  // ============================================================================
+  // TIME TRACKING (Agent)
+  // ============================================================================
+  timeTracking: router({
+    clockIn: agentProcedure.mutation(async ({ ctx }) => {
+      const existing = await getActiveTimeLog(ctx.user.id);
+      if (existing) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Already clocked in",
+        });
+      }
+
+      const timeLogId = await createTimeLog({
+        agentId: ctx.user.id,
+        loginAt: new Date(),
+      });
+
+      return { success: true, timeLogId };
+    }),
+
+    clockOut: agentProcedure.mutation(async ({ ctx }) => {
+      const activeLog = await getActiveTimeLog(ctx.user.id);
+      if (!activeLog) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Not clocked in",
+        });
+      }
+
+      await updateTimeLog(activeLog.id, {
+        logoutAt: new Date(),
+      });
+
+      return { success: true };
+    }),
+
+    startBreak: agentProcedure
+      .input(z.object({ breakType: z.enum(["lunch", "short", "other"]).default("short") }))
+      .mutation(async ({ ctx, input }) => {
+        const activeLog = await getActiveTimeLog(ctx.user.id);
+        if (!activeLog) {
           throw new TRPCError({
-            code: "CONFLICT",
-            message: "Email already registered",
+            code: "BAD_REQUEST",
+            message: "Not clocked in",
           });
         }
 
-        // Hash password
-        const hashedPassword = await argon2.hash(input.password);
+        const existingBreak = await getActiveBreak(activeLog.id);
+        if (existingBreak) {
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "Already on break",
+          });
+        }
 
-        // Create agent user
-        await createUser({
-          name: input.name,
-          email: input.email,
-          password: hashedPassword,
-          role: "agent",
-          loginMethod: "password",
+        const breakId = await createBreak({
+          timeLogId: activeLog.id,
+          startAt: new Date(),
+          breakType: input.breakType,
         });
 
+        return { success: true, breakId };
+      }),
+
+    endBreak: agentProcedure.mutation(async ({ ctx }) => {
+      const activeLog = await getActiveTimeLog(ctx.user.id);
+      if (!activeLog) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Not clocked in",
+        });
+      }
+
+      const activeBreak = await getActiveBreak(activeLog.id);
+      if (!activeBreak) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Not on break",
+        });
+      }
+
+      await updateBreak(activeBreak.id, {
+        endAt: new Date(),
+      });
+
+      return { success: true };
+    }),
+
+    getStatus: agentProcedure.query(async ({ ctx }) => {
+      const activeLog = await getActiveTimeLog(ctx.user.id);
+      if (!activeLog) {
+        return { isClockedIn: false };
+      }
+
+      const activeBreak = await getActiveBreak(activeLog.id);
+
+      return {
+        isClockedIn: true,
+        isOnBreak: !!activeBreak,
+        loginAt: activeLog.loginAt,
+        breakStartAt: activeBreak?.startAt,
+      };
+    }),
+
+    getHistory: agentProcedure
+      .input(z.object({ limit: z.number().default(30) }))
+      .query(async ({ ctx, input }) => {
+        return await getAgentTimeLogs(ctx.user.id, input.limit);
+      }),
+  }),
+
+  // ============================================================================
+  // QUICK REPLY TEMPLATES (Agent)
+  // ============================================================================
+  quickReplies: router({
+    list: agentProcedure.query(async ({ ctx }) => {
+      return await getQuickReplyTemplates(ctx.user.id);
+    }),
+
+    create: agentProcedure
+      .input(
+        z.object({
+          shortcut: z.string(),
+          content: z.string(),
+        })
+      )
+      .mutation(async ({ ctx, input }) => {
+        const templateId = await createQuickReplyTemplate({
+          agentId: ctx.user.id,
+          name: input.shortcut,
+          message: input.content,
+        });
+
+        return { success: true, templateId };
+      }),
+
+    update: agentProcedure
+      .input(
+        z.object({
+          id: z.number(),
+          shortcut: z.string().optional(),
+          content: z.string().optional(),
+        })
+      )
+      .mutation(async ({ input }) => {
+        const { id, shortcut, content } = input;
+        const updates: any = {};
+        if (shortcut) updates.name = shortcut;
+        if (content) updates.message = content;
+        await updateQuickReplyTemplate(id, updates);
         return { success: true };
+      }),
+
+    delete: agentProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input }) => {
+        await deleteQuickReplyTemplate(input.id);
+        return { success: true };
+      }),
+  }),
+
+  // ============================================================================
+  // CONVERSATION NOTES (Agent)
+  // ============================================================================
+  conversationNotes: router({
+    list: agentProcedure
+      .input(z.object({ conversationId: z.number() }))
+      .query(async ({ input }) => {
+        return await getConversationNotes(input.conversationId);
+      }),
+
+    create: agentProcedure
+      .input(
+        z.object({
+          conversationId: z.number(),
+          content: z.string(),
+        })
+      )
+      .mutation(async ({ ctx, input }) => {
+        const noteId = await createConversationNote({
+          conversationId: input.conversationId,
+          agentId: ctx.user.id,
+          content: input.content,
+        });
+
+        return { success: true, noteId };
+      }),
+
+    update: agentProcedure
+      .input(
+        z.object({
+          id: z.number(),
+          content: z.string(),
+        })
+      )
+      .mutation(async ({ input }) => {
+        await updateConversationNote(input.id, input.content);
+        return { success: true };
+      }),
+
+    delete: agentProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input }) => {
+        await deleteConversationNote(input.id);
+        return { success: true };
+      }),
+  }),
+
+  // ============================================================================
+  // CONVERSATION TAGS (Agent)
+  // ============================================================================
+  conversationTags: router({
+    list: agentProcedure
+      .input(z.object({ conversationId: z.number() }))
+      .query(async ({ input }) => {
+        return await getConversationTags(input.conversationId);
+      }),
+
+    add: agentProcedure
+      .input(
+        z.object({
+          conversationId: z.number(),
+          tagName: z.string(),
+        })
+      )
+      .mutation(async ({ input }) => {
+        const tagId = await addConversationTag(input.conversationId, input.tagName);
+        return { success: true, tagId };
+      }),
+
+    remove: agentProcedure
+      .input(
+        z.object({
+          conversationId: z.number(),
+          tagName: z.string(),
+        })
+      )
+      .mutation(async ({ input }) => {
+        await removeConversationTag(input.conversationId, input.tagName);
+        return { success: true };
+      }),
+  }),
+
+  // ============================================================================
+  // SETTINGS (Admin Only)
+  // ============================================================================
+  settings: router({
+    get: adminProcedure
+      .input(z.object({ key: z.string() }))
+      .query(async ({ input }) => {
+        return await getSetting(input.key);
+      }),
+
+    set: adminProcedure
+      .input(
+        z.object({
+          key: z.string(),
+          value: z.string(),
+        })
+      )
+      .mutation(async ({ input }) => {
+        await setSetting(input.key, input.value);
+        return { success: true };
+      }),
+
+    getAll: adminProcedure.query(async () => {
+      return await getAllSettings();
+    }),
+  }),
+
+  // ============================================================================
+  // WEBHOOK RECEIVER (Public - for external systems)
+  // ============================================================================
+  webhook: router({
+    receive: publicProcedure
+      .input(
+        z.object({
+          apiKey: z.string(),
+          from: z.string(),
+          message: z.string(),
+          messageType: z.enum(["text", "image", "document"]).default("text"),
+          mediaUrl: z.string().optional(),
+          timestamp: z.string().optional(),
+        })
+      )
+      .mutation(async ({ input }) => {
+        // Verify API key
+        const account = await getWebhookAccountByApiKey(input.apiKey);
+        if (!account) {
+          throw new TRPCError({
+            code: "UNAUTHORIZED",
+            message: "Invalid API key",
+          });
+        }
+
+        if (account.status !== "active") {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "Account is inactive",
+          });
+        }
+
+        // Log the webhook
+        await createWebhookLog({
+          accountId: account.id,
+          direction: "inbound",
+          fromNumber: input.from,
+          message: input.message,
+          status: "received",
+          metadata: JSON.stringify(input),
+          timestamp: new Date(),
+        });
+
+        // Find or create conversation
+        let conversation = await getConversationByPhone(input.from, account.id);
+        
+        if (!conversation) {
+          const conversationId = await createConversation({
+            accountId: account.id,
+            customerPhone: input.from,
+            customerName: input.from,
+            isNew: true,
+            unreadCount: 1,
+            lastMessageAt: new Date(),
+          });
+          
+          conversation = await getConversationById(conversationId);
+        }
+
+        if (!conversation) {
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: "Failed to create conversation",
+          });
+        }
+
+        // Create message
+        await createMessage({
+          conversationId: conversation.id,
+          direction: "inbound",
+          content: input.message,
+          fromNumber: input.from,
+          mediaUrl: input.mediaUrl,
+          mediaType: input.messageType === "text" ? undefined : input.messageType as "image" | "document",
+          timestamp: input.timestamp ? new Date(input.timestamp) : new Date(),
+        });
+
+        return { success: true, conversationId: conversation.id };
       }),
   }),
 });
