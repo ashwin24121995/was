@@ -64,3 +64,7 @@
 ## Production Deployment Crash
 - [x] Fix TypeError at dist/index.js:758 - path.join receiving undefined
 - [x] Replace import.meta.dirname with Node.js 18 compatible __dirname
+
+## Additional Node.js 18 Compatibility Fixes
+- [x] Fix import.meta.dirname in vite.config.ts (9 occurrences)
+- [x] Fix import.meta.dirname in vitest.config.ts (1 occurrence)
