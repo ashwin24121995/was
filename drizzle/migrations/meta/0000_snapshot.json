@@ -1,7 +1,7 @@
 {
   "version": "5",
   "dialect": "mysql",
-  "id": "26357825-7949-479e-84cb-1baac47a6b94",
+  "id": "1964fb1f-e19a-4877-a470-b05cf1c16f79",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "settings": {
@@ -67,6 +67,13 @@
           "primaryKey": false,
           "notNull": true,
           "autoincrement": true
+        },
+        "open_id": {
+          "name": "open_id",
+          "type": "varchar(64)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
         },
         "name": {
           "name": "name",
@@ -142,6 +149,12 @@
         }
       },
       "uniqueConstraints": {
+        "users_open_id_unique": {
+          "name": "users_open_id_unique",
+          "columns": [
+            "open_id"
+          ]
+        },
         "users_email_unique": {
           "name": "users_email_unique",
           "columns": [

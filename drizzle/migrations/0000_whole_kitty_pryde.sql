@@ -9,6 +9,7 @@ CREATE TABLE `settings` (
 --> statement-breakpoint
 CREATE TABLE `users` (
 	`id` serial AUTO_INCREMENT NOT NULL,
+	`open_id` varchar(64),
 	`name` text NOT NULL,
 	`email` varchar(320) NOT NULL,
 	`password` text,
@@ -18,6 +19,7 @@ CREATE TABLE `users` (
 	`updated_at` timestamp NOT NULL DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,
 	`last_signed_in` timestamp NOT NULL DEFAULT (now()),
 	CONSTRAINT `users_id` PRIMARY KEY(`id`),
+	CONSTRAINT `users_open_id_unique` UNIQUE(`open_id`),
 	CONSTRAINT `users_email_unique` UNIQUE(`email`)
 );
 --> statement-breakpoint
