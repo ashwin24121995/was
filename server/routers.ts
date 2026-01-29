@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { eq, desc } from "drizzle-orm";
-import bcrypt from "bcrypt";
+import argon2 from "argon2";
 import * as jose from "jose";
 import { nanoid } from "nanoid";
 import { COOKIE_NAME } from "@shared/const";
@@ -83,7 +83,7 @@ export const appRouter = router({
         }
 
         // Hash password
-        const hashedPassword = await bcrypt.hash(input.password, 10);
+        const hashedPassword = await argon2.hash(input.password);
 
         // Create admin user
         await createUser({
@@ -144,7 +144,7 @@ export const appRouter = router({
         }
 
         // Verify password
-        const isValid = await bcrypt.compare(input.password, user.password);
+        const isValid = await argon2.verify(user.password, input.password);
 
         if (!isValid) {
           throw new TRPCError({
@@ -208,7 +208,7 @@ export const appRouter = router({
         }
 
         // Verify password
-        const isValid = await bcrypt.compare(input.password, user.password);
+        const isValid = await argon2.verify(user.password, input.password);
 
         if (!isValid) {
           throw new TRPCError({
@@ -410,7 +410,7 @@ export const appRouter = router({
         }
 
         // Hash password
-        const hashedPassword = await bcrypt.hash(input.password, 10);
+        const hashedPassword = await argon2.hash(input.password);
 
         // Create agent user
         await createUser({

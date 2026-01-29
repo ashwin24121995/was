@@ -91,3 +91,8 @@
 - [x] Add timestamp-based cache busting to Vite build output
 - [ ] Force Railway CDN to serve new JavaScript assets
 - [ ] Verify crypto error is resolved after new build deploys
+
+## Alternative Password Hashing Solution
+- [x] Replace bcrypt with argon2 (no crypto module issues)
+- [x] Update authentication routers to use argon2
+- [ ] Push to GitHub and test on Railway deployment
