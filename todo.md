@@ -81,3 +81,8 @@
 - [x] Replace bcryptjs with native bcrypt module
 - [x] Remove crypto import workaround
 - [x] Test password hashing works correctly
+
+## Railway Build Cache Issue
+- [x] Force Railway to rebuild with clean cache (added rm -rf dist)
+- [x] Ensure bcrypt native module compiles on Railway (added postinstall script)
+- [x] Add postinstall rebuild script to package.json
