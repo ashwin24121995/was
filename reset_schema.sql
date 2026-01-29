@@ -1,0 +1,4 @@
+DROP TABLE IF EXISTS users;
+DROP TABLE IF EXISTS webhook_logs;
+DROP TABLE IF EXISTS webhook_accounts;
+DROP TABLE IF EXISTS settings;
