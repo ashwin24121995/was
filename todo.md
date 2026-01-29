@@ -68,3 +68,7 @@
 ## Additional Node.js 18 Compatibility Fixes
 - [x] Fix import.meta.dirname in vite.config.ts (9 occurrences)
 - [x] Fix import.meta.dirname in vitest.config.ts (1 occurrence)
+
+## Authentication Errors
+- [x] Fix "crypto is not defined" error in registration
+- [x] Add proper crypto module import

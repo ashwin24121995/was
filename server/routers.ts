@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { eq, desc } from "drizzle-orm";
+import crypto from "crypto";
 import bcrypt from "bcryptjs";
 import * as jose from "jose";
 import { nanoid } from "nanoid";
