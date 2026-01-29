@@ -162,5 +162,12 @@
 - [x] Add Test Connection button to Webhook Accounts table
 - [x] Add connection status indicator (toast messages with success/warning/error)
 - [x] Display detailed error messages if connection fails
-- [ ] Push changes to GitHub and deploy to Railway
+- [x] Push changes to GitHub and deploy to Railway
 - [ ] Test the connection verification feature
+
+## WaSender API Connection Fix
+- [x] Check WaSender API client base URL and endpoint
+- [x] Verify authentication header format
+- [ ] Test API connection with correct endpoint
+- [ ] Fix any CORS or network issues
+- [ ] Push fix to GitHub and deploy to Railway

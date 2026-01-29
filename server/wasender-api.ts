@@ -48,7 +48,7 @@ export class WASenderAPI {
 
   constructor(config: WASenderConfig) {
     this.apiKey = config.apiKey;
-    const baseUrl = config.baseUrl || 'https://wasenderapi.com/whatsapp';
+    const baseUrl = config.baseUrl || 'https://wasenderapi.com';
 
     this.client = axios.create({
       baseURL: baseUrl,
