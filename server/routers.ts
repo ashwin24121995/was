@@ -603,6 +603,56 @@ export const appRouter = router({
         })
       )
       .mutation(async ({ input, ctx }) => {
+        // Get conversation details
+        const conversation = await getConversationById(input.conversationId);
+        if (!conversation) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Conversation not found",
+          });
+        }
+
+        // Get webhook account to get API key
+        const account = await getWebhookAccountById(conversation.accountId);
+        if (!account) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Webhook account not found",
+          });
+        }
+
+        // Send message via WASender API
+        const { createWASenderClient } = await import("./wasender-api.js");
+        const wasenderClient = createWASenderClient(account.apiKey);
+
+        let apiResponse;
+        if (input.messageType === "text") {
+          apiResponse = await wasenderClient.sendTextMessage({
+            to: conversation.customerPhone,
+            message: input.content,
+          });
+        } else if (input.messageType === "image" && input.mediaUrl) {
+          apiResponse = await wasenderClient.sendImageMessage({
+            to: conversation.customerPhone,
+            media_url: input.mediaUrl,
+            caption: input.content,
+          });
+        } else if (input.messageType === "document" && input.mediaUrl) {
+          apiResponse = await wasenderClient.sendDocumentMessage({
+            to: conversation.customerPhone,
+            media_url: input.mediaUrl,
+            caption: input.content,
+          });
+        }
+
+        if (!apiResponse?.success) {
+          throw new TRPCError({
+            code: "INTERNAL_SERVER_ERROR",
+            message: apiResponse?.error || "Failed to send message",
+          });
+        }
+
+        // Save message to database
         const messageId = await createMessage({
           conversationId: input.conversationId,
           direction: "outbound",
@@ -611,6 +661,11 @@ export const appRouter = router({
           mediaUrl: input.mediaUrl,
           mediaType: input.messageType === "text" ? undefined : input.messageType as "image" | "document",
           timestamp: new Date(),
+        });
+
+        // Update conversation last message time
+        await updateConversation(input.conversationId, {
+          lastMessageAt: new Date(),
         });
 
         return { success: true, messageId };

@@ -98,6 +98,17 @@
 - [x] Responsive UI design
 
 ## Railway Deployment Issues
-- [ ] Fix database migration crash - tables already exist error
-- [ ] Remove `pnpm db:push` from start script (migrations should run separately)
+- [x] Fix database migration crash - tables already exist error
+- [x] Remove `pnpm db:push` from start script (migrations should run separately)
 - [ ] Verify Railway deployment after fix
+
+## WASender API Integration
+- [x] Create WASender API client (server/wasender-api.ts)
+- [x] Implement send text message function
+- [x] Implement send media message functions
+- [x] Implement get session status function
+- [x] Implement webhook receiver endpoint
+- [x] Update chat.sendMessage router to use WASender API
+- [ ] Test sending messages from agent dashboard
+- [ ] Test receiving messages via webhook
+- [ ] Push to GitHub and deploy to Railway
