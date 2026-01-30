@@ -43,6 +43,7 @@ import {
   getOrCreateConversation,
   updateConversation,
   deleteConversation,
+  deleteMessagesByConversationId,
   markConversationAsViewed,
   markConversationAsRead,
   claimConversation,
@@ -612,6 +613,38 @@ export const appRouter = router({
       .input(z.object({ conversationId: z.number() }))
       .mutation(async ({ input }) => {
         await markConversationAsRead(input.conversationId);
+        return { success: true };
+      }),
+
+    delete: agentProcedure
+      .input(z.object({ conversationId: z.number() }))
+      .mutation(async ({ input, ctx }) => {
+        const conversation = await getConversationById(input.conversationId);
+        
+        if (!conversation) {
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "Conversation not found",
+          });
+        }
+        
+        // Verify agent has access to this conversation's account
+        const accounts = await getAgentAccounts(ctx.user.id);
+        const hasAccess = accounts.some(a => a.id === conversation.accountId);
+        
+        if (!hasAccess) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "Access denied",
+          });
+        }
+        
+        // Delete all messages in this conversation first
+        await deleteMessagesByConversationId(input.conversationId);
+        
+        // Delete the conversation
+        await deleteConversation(input.conversationId);
+        
         return { success: true };
       }),
 

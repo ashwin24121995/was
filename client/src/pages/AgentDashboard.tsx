@@ -264,9 +264,24 @@ function ConversationList({
   selectedId: number | null;
   onSelect: (id: number) => void;
 }) {
+  const utils = trpc.useUtils();
   const { data: conversations, isLoading } = trpc.conversations.list.useQuery({
     searchQuery: searchQuery || undefined,
   });
+
+  const deleteConversationMutation = trpc.conversations.delete.useMutation({
+    onSuccess: () => {
+      toast.success("Conversation deleted");
+      utils.conversations.list.invalidate();
+    },
+    onError: (error) => {
+      toast.error(`Failed to delete conversation: ${error.message}`);
+    },
+  });
+
+  const deleteConversation = (conversationId: number) => {
+    deleteConversationMutation.mutate({ conversationId });
+  };
 
   if (isLoading) {
     return <div className="p-4 text-center text-gray-500">Loading...</div>;
@@ -280,32 +295,48 @@ function ConversationList({
     <ScrollArea className="flex-1">
       <div className="divide-y divide-gray-200">
         {conversations.map((conversation) => (
-          <button
+          <div
             key={conversation.id}
-            onClick={() => onSelect(conversation.id)}
-            className={`w-full p-4 text-left hover:bg-gray-50 ${
+            className={`relative group w-full p-4 hover:bg-gray-50 ${
               selectedId === conversation.id ? "bg-blue-50" : ""
             }`}
           >
-            <div className="flex items-start justify-between mb-1">
-              <div className="flex items-center gap-2">
-                <span className="font-medium">{conversation.customerName}</span>
-                {conversation.isNew && <Badge variant="destructive">NEW</Badge>}
+            <button
+              onClick={() => onSelect(conversation.id)}
+              className="w-full text-left"
+            >
+              <div className="flex items-start justify-between mb-1">
+                <div className="flex items-center gap-2">
+                  <span className="font-medium">{conversation.customerName}</span>
+                  {conversation.isNew && <Badge variant="destructive">NEW</Badge>}
+                </div>
+                <span className="text-xs text-gray-500">
+                  {new Date(conversation.lastMessageAt).toLocaleTimeString([], {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
+                </span>
               </div>
-              <span className="text-xs text-gray-500">
-                {new Date(conversation.lastMessageAt).toLocaleTimeString([], {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })}
-              </span>
-            </div>
-            <div className="text-sm text-gray-600 truncate">{conversation.customerPhone}</div>
-            {conversation.unreadCount > 0 && (
-              <Badge variant="default" className="mt-2">
-                {conversation.unreadCount} unread
-              </Badge>
-            )}
-          </button>
+              <div className="text-sm text-gray-600 truncate">{conversation.customerPhone}</div>
+              {conversation.unreadCount > 0 && (
+                <Badge variant="default" className="mt-2">
+                  {conversation.unreadCount} unread
+                </Badge>
+              )}
+            </button>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                if (confirm("Are you sure you want to delete this conversation? This action cannot be undone.")) {
+                  deleteConversation(conversation.id);
+                }
+              }}
+              className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-red-100 rounded"
+              title="Delete conversation"
+            >
+              <Trash2 className="h-4 w-4 text-red-600" />
+            </button>
+          </div>
         ))}
       </div>
     </ScrollArea>

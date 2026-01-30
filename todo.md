@@ -318,3 +318,22 @@
 - [ ] Test all 14 message types (when implemented)
 - [ ] Test with 2+ agents simultaneously
 - [ ] Verify zero-delay real-time updates in production
+
+
+## New Feature: Delete Conversation for Agents
+
+- [ ] Add deleteConversation tRPC mutation in conversations router
+- [ ] Add delete button in agent dashboard conversation list (trash icon)
+- [ ] Add confirmation dialog before deleting conversation
+- [ ] Delete all messages associated with the conversation
+- [ ] Test delete functionality in agent dashboard
+[x] Add external_id field to messages table for WASender message ID
+[x] Add getMessageByExternalId function to db.ts  
+[x] Update webhook handler to extract key.id from payload
+[x] Update webhook handler to check external_id before creating message
+[x] Store WASender message ID in external_id field when creating message
+
+[x] Add deleteConversation tRPC mutation in conversations router
+[x] Add delete button in agent dashboard conversation list (trash icon)
+[x] Add confirmation dialog before deleting conversation
+[x] Delete all messages associated with the conversation

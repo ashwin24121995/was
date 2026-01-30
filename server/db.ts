@@ -358,6 +358,12 @@ export async function getMessageByExternalId(externalId: string): Promise<Messag
   return result[0];
 }
 
+export async function deleteMessagesByConversationId(conversationId: number): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.delete(messages).where(eq(messages.conversationId, conversationId));
+}
+
 export async function createMessage(message: InsertMessage): Promise<number> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
