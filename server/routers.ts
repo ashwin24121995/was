@@ -749,9 +749,35 @@ export const appRouter = router({
       .input(
         z.object({
           conversationId: z.number(),
-          content: z.string(),
-          messageType: z.enum(["text", "image", "document"]).default("text"),
+          content: z.string().optional(),
+          messageType: z.enum([
+            "text", "image", "video", "audio", "document", "sticker",
+            "contact", "location", "poll", "quoted", "viewonce"
+          ]).default("text"),
           mediaUrl: z.string().optional(),
+          // For contact messages
+          contact: z.object({
+            name: z.string(),
+            phone: z.string(),
+            organization: z.string().optional(),
+          }).optional(),
+          // For location messages
+          location: z.object({
+            latitude: z.number(),
+            longitude: z.number(),
+            name: z.string().optional(),
+            address: z.string().optional(),
+          }).optional(),
+          // For poll messages
+          poll: z.object({
+            question: z.string(),
+            options: z.array(z.string()),
+            multipleAnswers: z.boolean().optional(),
+          }).optional(),
+          // For quoted/reply messages
+          quotedMessageId: z.string().optional(),
+          // For view-once messages
+          viewOnce: z.boolean().optional(),
         })
       )
       .mutation(async ({ input, ctx }) => {
@@ -778,23 +804,120 @@ export const appRouter = router({
         const wasenderClient = createWASenderClient(account.apiKey);
 
         let apiResponse;
-        if (input.messageType === "text") {
-          apiResponse = await wasenderClient.sendTextMessage({
-            to: conversation.customerPhone,
-            message: input.content,
-          });
-        } else if (input.messageType === "image" && input.mediaUrl) {
-          apiResponse = await wasenderClient.sendImageMessage({
-            to: conversation.customerPhone,
-            media_url: input.mediaUrl,
-            caption: input.content,
-          });
-        } else if (input.messageType === "document" && input.mediaUrl) {
-          apiResponse = await wasenderClient.sendDocumentMessage({
-            to: conversation.customerPhone,
-            media_url: input.mediaUrl,
-            caption: input.content,
-          });
+        let messageContent = input.content || "";
+
+        switch (input.messageType) {
+          case "text":
+            apiResponse = await wasenderClient.sendTextMessage({
+              to: conversation.customerPhone,
+              message: messageContent,
+            });
+            break;
+
+          case "image":
+            if (!input.mediaUrl) throw new TRPCError({ code: "BAD_REQUEST", message: "Media URL required for image" });
+            if (input.viewOnce) {
+              apiResponse = await wasenderClient.sendViewOnceMessage({
+                to: conversation.customerPhone,
+                media_url: input.mediaUrl,
+                mediaType: "image",
+                caption: messageContent,
+              });
+            } else {
+              apiResponse = await wasenderClient.sendImageMessage({
+                to: conversation.customerPhone,
+                media_url: input.mediaUrl,
+                caption: messageContent,
+              });
+            }
+            break;
+
+          case "video":
+            if (!input.mediaUrl) throw new TRPCError({ code: "BAD_REQUEST", message: "Media URL required for video" });
+            if (input.viewOnce) {
+              apiResponse = await wasenderClient.sendViewOnceMessage({
+                to: conversation.customerPhone,
+                media_url: input.mediaUrl,
+                mediaType: "video",
+                caption: messageContent,
+              });
+            } else {
+              apiResponse = await wasenderClient.sendVideoMessage({
+                to: conversation.customerPhone,
+                media_url: input.mediaUrl,
+                caption: messageContent,
+              });
+            }
+            break;
+
+          case "audio":
+            if (!input.mediaUrl) throw new TRPCError({ code: "BAD_REQUEST", message: "Media URL required for audio" });
+            apiResponse = await wasenderClient.sendAudioMessage({
+              to: conversation.customerPhone,
+              media_url: input.mediaUrl,
+            });
+            break;
+
+          case "document":
+            if (!input.mediaUrl) throw new TRPCError({ code: "BAD_REQUEST", message: "Media URL required for document" });
+            apiResponse = await wasenderClient.sendDocumentMessage({
+              to: conversation.customerPhone,
+              media_url: input.mediaUrl,
+              caption: messageContent,
+            });
+            break;
+
+          case "sticker":
+            if (!input.mediaUrl) throw new TRPCError({ code: "BAD_REQUEST", message: "Media URL required for sticker" });
+            apiResponse = await wasenderClient.sendStickerMessage({
+              to: conversation.customerPhone,
+              sticker_url: input.mediaUrl,
+            });
+            break;
+
+          case "contact":
+            if (!input.contact) throw new TRPCError({ code: "BAD_REQUEST", message: "Contact data required" });
+            apiResponse = await wasenderClient.sendContactCard({
+              to: conversation.customerPhone,
+              contact: input.contact,
+            });
+            messageContent = `Contact: ${input.contact.name} (${input.contact.phone})`;
+            break;
+
+          case "location":
+            if (!input.location) throw new TRPCError({ code: "BAD_REQUEST", message: "Location data required" });
+            apiResponse = await wasenderClient.sendLocation({
+              to: conversation.customerPhone,
+              latitude: input.location.latitude,
+              longitude: input.location.longitude,
+              name: input.location.name,
+              address: input.location.address,
+            });
+            messageContent = `Location: ${input.location.latitude}, ${input.location.longitude}`;
+            break;
+
+          case "poll":
+            if (!input.poll) throw new TRPCError({ code: "BAD_REQUEST", message: "Poll data required" });
+            apiResponse = await wasenderClient.sendPoll({
+              to: conversation.customerPhone,
+              question: input.poll.question,
+              options: input.poll.options,
+              multipleAnswers: input.poll.multipleAnswers,
+            });
+            messageContent = `Poll: ${input.poll.question}`;
+            break;
+
+          case "quoted":
+            if (!input.quotedMessageId) throw new TRPCError({ code: "BAD_REQUEST", message: "Quoted message ID required" });
+            apiResponse = await wasenderClient.sendQuotedMessage({
+              to: conversation.customerPhone,
+              message: messageContent,
+              quotedMessageId: input.quotedMessageId,
+            });
+            break;
+
+          default:
+            throw new TRPCError({ code: "BAD_REQUEST", message: "Invalid message type" });
         }
 
         if (!apiResponse?.success) {
@@ -808,10 +931,10 @@ export const appRouter = router({
         const messageId = await createMessage({
           conversationId: input.conversationId,
           direction: "outbound",
-          content: input.content,
+          content: messageContent,
           agentId: ctx.user.id,
           mediaUrl: input.mediaUrl,
-          mediaType: input.messageType === "text" ? undefined : input.messageType as "image" | "document",
+          mediaType: input.messageType === "text" ? undefined : input.messageType as any,
           timestamp: new Date(),
         });
 

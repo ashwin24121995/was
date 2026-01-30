@@ -497,7 +497,54 @@ function ChatArea({ conversationId, socket }: { conversationId: number; socket: 
                     : "bg-white text-gray-900 border border-gray-200"
                 }`}
               >
-                <p>{message.content}</p>
+                {/* Media Content */}
+                {message.mediaType === "image" && message.mediaUrl && (
+                  <img
+                    src={message.mediaUrl}
+                    alt="Image message"
+                    className="max-w-full rounded mb-2 cursor-pointer hover:opacity-90"
+                    onClick={() => window.open(message.mediaUrl, "_blank")}
+                  />
+                )}
+                {message.mediaType === "video" && message.mediaUrl && (
+                  <video
+                    src={message.mediaUrl}
+                    controls
+                    className="max-w-full rounded mb-2"
+                  />
+                )}
+                {message.mediaType === "audio" && message.mediaUrl && (
+                  <audio
+                    src={message.mediaUrl}
+                    controls
+                    className="w-full mb-2"
+                  />
+                )}
+                {message.mediaType === "document" && message.mediaUrl && (
+                  <a
+                    href={message.mediaUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 p-2 bg-gray-100 rounded mb-2 hover:bg-gray-200"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    <span className="text-sm">Download Document</span>
+                  </a>
+                )}
+                {message.mediaType === "sticker" && message.mediaUrl && (
+                  <img
+                    src={message.mediaUrl}
+                    alt="Sticker"
+                    className="w-32 h-32 object-contain"
+                  />
+                )}
+                
+                {/* Text Content */}
+                {message.content && <p>{message.content}</p>}
+                
+                {/* Timestamp */}
                 <p className="text-xs mt-1 opacity-70">
                   {new Date(message.timestamp).toLocaleTimeString()}
                 </p>

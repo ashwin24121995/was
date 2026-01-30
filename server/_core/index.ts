@@ -94,23 +94,78 @@ async function startServer() {
         return res.status(200).json({ success: true, message: "No message ID" });
       }
       
-      // Determine message type and media URL
+      // Determine message type, media URL, and additional data
       let messageType = 'text';
       let mediaUrl = null;
+      let locationData = null;
+      let contactData = null;
+      let pollData = null;
+      let isViewOnce = false;
+      let quotedMessageId = null;
       
       if (messageData.message) {
-        if (messageData.message.imageMessage) {
+        const msg = messageData.message;
+        
+        // Image message
+        if (msg.imageMessage) {
           messageType = 'image';
-          mediaUrl = messageData.message.imageMessage.url;
-        } else if (messageData.message.videoMessage) {
+          mediaUrl = msg.imageMessage.url;
+          isViewOnce = msg.imageMessage.viewOnce || false;
+        }
+        // Video message
+        else if (msg.videoMessage) {
           messageType = 'video';
-          mediaUrl = messageData.message.videoMessage.url;
-        } else if (messageData.message.audioMessage) {
+          mediaUrl = msg.videoMessage.url;
+          isViewOnce = msg.videoMessage.viewOnce || false;
+        }
+        // Audio message
+        else if (msg.audioMessage) {
           messageType = 'audio';
-          mediaUrl = messageData.message.audioMessage.url;
-        } else if (messageData.message.documentMessage) {
+          mediaUrl = msg.audioMessage.url;
+        }
+        // Document message
+        else if (msg.documentMessage) {
           messageType = 'document';
-          mediaUrl = messageData.message.documentMessage.url;
+          mediaUrl = msg.documentMessage.url;
+        }
+        // Sticker message
+        else if (msg.stickerMessage) {
+          messageType = 'sticker';
+          mediaUrl = msg.stickerMessage.url;
+        }
+        // Location message
+        else if (msg.locationMessage) {
+          messageType = 'location';
+          locationData = {
+            latitude: msg.locationMessage.degreesLatitude,
+            longitude: msg.locationMessage.degreesLongitude,
+            name: msg.locationMessage.name,
+            address: msg.locationMessage.address,
+          };
+        }
+        // Contact message
+        else if (msg.contactMessage || msg.contactsArrayMessage) {
+          messageType = 'contact';
+          const contact = msg.contactMessage || msg.contactsArrayMessage?.contacts?.[0];
+          if (contact) {
+            contactData = {
+              name: contact.displayName || contact.vcard?.split('FN:')[1]?.split('\n')[0],
+              phone: contact.vcard?.split('TEL:')[1]?.split('\n')[0],
+            };
+          }
+        }
+        // Poll message
+        else if (msg.pollCreationMessage) {
+          messageType = 'poll';
+          pollData = {
+            question: msg.pollCreationMessage.name,
+            options: msg.pollCreationMessage.options?.map((opt: any) => opt.optionName) || [],
+          };
+        }
+        
+        // Check for quoted/reply message
+        if (msg.extendedTextMessage?.contextInfo?.quotedMessage) {
+          quotedMessageId = msg.extendedTextMessage.contextInfo.stanzaId;
         }
       }
 
@@ -142,15 +197,25 @@ async function startServer() {
         return res.status(200).json({ success: true, message: "Duplicate message ignored" });
       }
 
+      // Prepare message content based on type
+      let finalContent = messageBody;
+      if (messageType === 'location' && locationData) {
+        finalContent = `Location: ${locationData.latitude}, ${locationData.longitude}${locationData.name ? ` (${locationData.name})` : ''}`;
+      } else if (messageType === 'contact' && contactData) {
+        finalContent = `Contact: ${contactData.name} (${contactData.phone})`;
+      } else if (messageType === 'poll' && pollData) {
+        finalContent = `Poll: ${pollData.question}`;
+      }
+
       // Save message to database with external_id
       await createMessage({
         conversationId: conversation.id,
-        sender: "customer",
-        content: messageBody,
-        messageType: messageType,
+        direction: "inbound",
+        content: finalContent,
         mediaUrl: mediaUrl,
-        status: "delivered",
-        externalId: messageId, // Store WASender message ID
+        mediaType: messageType === 'text' ? undefined : messageType as any,
+        timestamp: timestamp,
+        externalId: messageId, // Store WASender message ID for deduplication
       });
 
       // Broadcast message via Socket.IO to all agents linked to this account
