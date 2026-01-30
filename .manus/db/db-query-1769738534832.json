@@ -1,0 +1,9 @@
+{
+  "query": "TRUNCATE TABLE messages;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user Hbsm33TssSr3JiD.723f584c7613 --database NvQwFLJB5tXKDHQqKqZgVU --execute TRUNCATE TABLE messages;",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 1771
+}

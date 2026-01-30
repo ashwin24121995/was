@@ -10,7 +10,7 @@
     "check": "tsc --noEmit",
     "format": "prettier --write .",
     "test": "vitest run",
-    "db:push": "drizzle-kit generate && drizzle-kit migrate",
+    "db:push": "drizzle-kit generate && drizzle-kit migrate --force",
     "postinstall": "pnpm rebuild argon2"
   },
   "dependencies": {
