@@ -717,7 +717,10 @@ export const appRouter = router({
           conversationId: conversation.id,
           direction: "outbound",
           content: input.initialMessage,
+          fromNumber: account.phoneNumber || undefined,
+          toNumber: input.phoneNumber,
           agentId: ctx.user.id,
+          externalId: apiResponse?.data?.id || undefined,
           timestamp: new Date(),
         });
 
@@ -932,9 +935,12 @@ export const appRouter = router({
           conversationId: input.conversationId,
           direction: "outbound",
           content: messageContent,
+          fromNumber: account.phoneNumber || undefined,
+          toNumber: conversation.customerPhone,
           agentId: ctx.user.id,
           mediaUrl: input.mediaUrl,
           mediaType: input.messageType === "text" ? undefined : input.messageType as any,
+          externalId: apiResponse?.data?.id || undefined,
           timestamp: new Date(),
         });
 

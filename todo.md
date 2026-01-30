@@ -113,3 +113,6 @@
 
 ## 📝 Known Issues (Non-blocking)
 - TypeScript errors in unused OAuth files (server/_core/sdk.ts, server/_core/oauth.ts) - These files are not used since custom JWT auth is implemented
+
+## 🐛 Bug Fixes
+- [x] Fix message sending: from_number, to_number, external_id not populated correctly in database insert
