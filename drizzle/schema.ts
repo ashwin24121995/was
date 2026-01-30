@@ -89,7 +89,7 @@ export const messages = mysqlTable("messages", {
   toNumber: varchar("to_number", { length: 20 }),
   agentId: int("agent_id"), // For outbound messages
   mediaUrl: text("media_url"),
-  mediaType: mysqlEnum("media_type", ["image", "audio", "document", "sticker"]),
+  mediaType: mysqlEnum("media_type", ["image", "video", "audio", "document", "sticker"]),
   status: mysqlEnum("status", ["pending", "sent", "delivered", "failed"]).default("pending").notNull(),
   externalId: varchar("external_id", { length: 255 }).unique(), // WASender message ID for deduplication
   timestamp: timestamp("timestamp").defaultNow().notNull(),

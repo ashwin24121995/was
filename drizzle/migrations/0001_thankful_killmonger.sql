@@ -1,0 +1,1 @@
+ALTER TABLE `messages` MODIFY COLUMN `media_type` enum('image','video','audio','document','sticker');
