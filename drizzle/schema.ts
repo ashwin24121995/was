@@ -79,6 +79,7 @@ export type InsertConversation = typeof conversations.$inferInsert;
 /**
  * Messages table - stores all chat messages
  * Links to conversations and optionally to agents (for outbound messages)
+ * Last deployment: 2026-01-30 02:08 UTC
  */
 export const messages = mysqlTable("messages", {
   id: serial("id").primaryKey(),
