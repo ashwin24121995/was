@@ -35,10 +35,11 @@
 ## 📤 Phase 2: Media Upload & Handling
 - [x] Implement Upload Media File (POST /api/upload) in WASender API client
 - [x] Implement Decrypt Media File (POST /api/decrypt-media) in WASender API client
-- [ ] Add file upload UI in agent chat interface (UI controls pending)
-- [ ] Support drag-and-drop for file uploads (UI controls pending)
-- [ ] Show media preview before sending (UI controls pending)
-- [ ] Add media type selector (UI controls pending)
+- [x] Add file upload UI in agent chat interface
+- [x] Support file picker for uploads (drag-and-drop can be added later)
+- [x] Show media preview before sending (images, videos, audio, documents)
+- [x] Add automatic media type detection based on file type
+- [ ] Connect file upload to storage service (requires external storage configuration)
 
 ## 📥 Phase 3: Webhook Handler - All Message Types (Receive)
 - [x] Handle incoming image messages (extract imageUrl from webhook)
@@ -60,12 +61,12 @@
 - [x] Display audio messages with player
 - [x] Display document messages with download link
 - [x] Display sticker messages
-- [ ] Display location messages with map preview (text display working)
-- [ ] Display contact cards with formatted info (text display working)
-- [ ] Display poll messages with options (text display working)
-- [ ] Add reply/quote functionality to messages
-- [ ] Add message editing UI
-- [ ] Add message deletion UI
+- [x] Display location messages with formatted card and Google Maps link
+- [x] Display contact cards with formatted info and icon
+- [x] Display poll messages with formatted card and icon
+- [ ] Add reply/quote functionality to messages (backend ready, UI pending)
+- [ ] Add message editing UI (backend ready, UI pending)
+- [ ] Add message deletion UI (backend ready, UI pending)
 - [ ] Show media loading states and progress bars
 
 ## 🗄️ Phase 5: Database Schema Updates

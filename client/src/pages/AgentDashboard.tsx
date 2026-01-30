@@ -354,6 +354,9 @@ function ChatArea({ conversationId, socket }: { conversationId: number; socket: 
   const [showTags, setShowTags] = useState(false);
   const [isEditingName, setIsEditingName] = useState(false);
   const [newName, setNewName] = useState("");
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [mediaPreview, setMediaPreview] = useState<string | null>(null);
+  const [messageType, setMessageType] = useState<"text" | "image" | "video" | "audio" | "document">("text");
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const { data: conversation } = trpc.conversations.getById.useQuery({ id: conversationId });
@@ -394,15 +397,38 @@ function ChatArea({ conversationId, socket }: { conversationId: number; socket: 
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  const handleSendMessage = (e: React.FormEvent) => {
+  const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!messageText.trim()) return;
+    if (!messageText.trim() && !selectedFile) return;
+
+    // If there's a file, we need to upload it first
+    let mediaUrl: string | undefined = undefined;
+    
+    if (selectedFile) {
+      // TODO: Upload file to a storage service (e.g., S3, Cloudinary, or WASender upload endpoint)
+      // For now, we'll show a toast that file upload needs to be implemented
+      toast.error("File upload feature requires a storage service. Please provide a media URL directly or configure a storage service.");
+      return;
+      
+      // Example implementation when storage is ready:
+      // const formData = new FormData();
+      // formData.append('file', selectedFile);
+      // const uploadResponse = await fetch('/api/upload', { method: 'POST', body: formData });
+      // const { url } = await uploadResponse.json();
+      // mediaUrl = url;
+    }
 
     sendMessageMutation.mutate({
       conversationId,
-      content: messageText,
-      messageType: "text",
+      content: messageText || undefined,
+      messageType: messageType,
+      mediaUrl: mediaUrl,
     });
+    
+    // Reset form
+    setSelectedFile(null);
+    setMediaPreview(null);
+    setMessageType("text");
   };
 
   if (!conversation) {
@@ -541,8 +567,61 @@ function ChatArea({ conversationId, socket }: { conversationId: number; socket: 
                   />
                 )}
                 
-                {/* Text Content */}
-                {message.content && <p>{message.content}</p>}
+                {/* Location Message */}
+                {message.content && message.content.startsWith("Location:") && (
+                  <div className="bg-gray-50 p-3 rounded mb-2 border">
+                    <div className="flex items-start gap-2">
+                      <svg className="w-5 h-5 text-red-500 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
+                      </svg>
+                      <div className="flex-1">
+                        <p className="font-medium text-sm">Location Shared</p>
+                        <p className="text-xs text-gray-600 mt-1">{message.content}</p>
+                        <a
+                          href={`https://www.google.com/maps/search/?api=1&query=${message.content.split(': ')[1]}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-xs text-blue-600 hover:underline mt-1 inline-block"
+                        >
+                          Open in Google Maps →
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
+                {/* Contact Message */}
+                {message.content && message.content.startsWith("Contact:") && (
+                  <div className="bg-gray-50 p-3 rounded mb-2 border">
+                    <div className="flex items-start gap-2">
+                      <svg className="w-5 h-5 text-blue-500 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
+                      </svg>
+                      <div className="flex-1">
+                        <p className="font-medium text-sm">Contact Card</p>
+                        <p className="text-xs text-gray-600 mt-1">{message.content.replace("Contact: ", "")}</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
+                {/* Poll Message */}
+                {message.content && message.content.startsWith("Poll:") && (
+                  <div className="bg-gray-50 p-3 rounded mb-2 border">
+                    <div className="flex items-start gap-2">
+                      <svg className="w-5 h-5 text-purple-500 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z" />
+                      </svg>
+                      <div className="flex-1">
+                        <p className="font-medium text-sm">Poll</p>
+                        <p className="text-xs text-gray-600 mt-1">{message.content.replace("Poll: ", "")}</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
+                {/* Text Content (only show if not location/contact/poll) */}
+                {message.content && !message.content.startsWith("Location:") && !message.content.startsWith("Contact:") && !message.content.startsWith("Poll:") && <p>{message.content}</p>}
                 
                 {/* Timestamp */}
                 <p className="text-xs mt-1 opacity-70">
@@ -557,14 +636,83 @@ function ChatArea({ conversationId, socket }: { conversationId: number; socket: 
 
       {/* Message Input */}
       <div className="bg-white border-t border-gray-200 p-4">
+        {/* Media Preview */}
+        {mediaPreview && (
+          <div className="mb-3 relative inline-block">
+            {messageType === "image" && (
+              <img src={mediaPreview} alt="Preview" className="max-h-32 rounded border" />
+            )}
+            {messageType === "video" && (
+              <video src={mediaPreview} className="max-h-32 rounded border" controls />
+            )}
+            {(messageType === "audio" || messageType === "document") && (
+              <div className="p-4 bg-gray-100 rounded border">
+                <p className="text-sm font-medium">{selectedFile?.name}</p>
+                <p className="text-xs text-gray-500">{(selectedFile?.size || 0) / 1024 / 1024 < 1 ? `${((selectedFile?.size || 0) / 1024).toFixed(1)} KB` : `${((selectedFile?.size || 0) / 1024 / 1024).toFixed(1)} MB`}</p>
+              </div>
+            )}
+            <Button
+              size="sm"
+              variant="ghost"
+              className="absolute -top-2 -right-2 h-6 w-6 p-0 rounded-full bg-red-500 text-white hover:bg-red-600"
+              onClick={() => {
+                setSelectedFile(null);
+                setMediaPreview(null);
+                setMessageType("text");
+              }}
+            >
+              <X className="w-4 h-4" />
+            </Button>
+          </div>
+        )}
+        
         <form onSubmit={handleSendMessage} className="flex gap-2">
+          {/* File Upload Button */}
+          <input
+            type="file"
+            id="file-upload"
+            className="hidden"
+            accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.txt"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) {
+                setSelectedFile(file);
+                
+                // Determine message type
+                if (file.type.startsWith("image/")) {
+                  setMessageType("image");
+                  setMediaPreview(URL.createObjectURL(file));
+                } else if (file.type.startsWith("video/")) {
+                  setMessageType("video");
+                  setMediaPreview(URL.createObjectURL(file));
+                } else if (file.type.startsWith("audio/")) {
+                  setMessageType("audio");
+                  setMediaPreview(URL.createObjectURL(file));
+                } else {
+                  setMessageType("document");
+                  setMediaPreview(null);
+                }
+              }
+            }}
+          />
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            onClick={() => document.getElementById("file-upload")?.click()}
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+            </svg>
+          </Button>
+          
           <Input
             value={messageText}
             onChange={(e) => setMessageText(e.target.value)}
-            placeholder="Type a message..."
+            placeholder={selectedFile ? "Add a caption (optional)..." : "Type a message..."}
             className="flex-1"
           />
-          <Button type="submit" disabled={!messageText.trim()}>
+          <Button type="submit" disabled={!messageText.trim() && !selectedFile}>
             <Send className="w-4 h-4" />
           </Button>
         </form>
