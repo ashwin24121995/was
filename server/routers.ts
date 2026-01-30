@@ -1,5 +1,12 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
+
+// Helper function to convert empty/null/undefined strings to null
+const toNullIfEmpty = (value: string | null | undefined): string | null => {
+  if (value === null || value === undefined) return null;
+  const trimmed = value.trim();
+  return trimmed === "" ? null : trimmed;
+};
 import { createWASenderClient } from "./wasender-api";
 import { eq, desc } from "drizzle-orm";
 import argon2 from "argon2";
@@ -717,10 +724,10 @@ export const appRouter = router({
           conversationId: conversation.id,
           direction: "outbound",
           content: input.initialMessage,
-          fromNumber: account.phoneNumber?.trim() || null,
+          fromNumber: toNullIfEmpty(account.phoneNumber),
           toNumber: input.phoneNumber,
           agentId: ctx.user.id,
-          externalId: apiResponse?.data?.id?.trim() || null,
+          externalId: toNullIfEmpty(apiResponse?.data?.id),
           timestamp: new Date(),
         });
 
@@ -935,12 +942,12 @@ export const appRouter = router({
           conversationId: input.conversationId,
           direction: "outbound",
           content: messageContent,
-          fromNumber: account.phoneNumber?.trim() || null,
+          fromNumber: toNullIfEmpty(account.phoneNumber),
           toNumber: conversation.customerPhone,
           agentId: ctx.user.id,
           mediaUrl: input.mediaUrl,
           mediaType: input.messageType === "text" ? undefined : input.messageType as any,
-          externalId: apiResponse?.data?.id?.trim() || null,
+          externalId: toNullIfEmpty(apiResponse?.data?.id),
           timestamp: new Date(),
         });
 

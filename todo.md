@@ -118,3 +118,4 @@
 - [x] Fix message sending: from_number, to_number, external_id not populated correctly in database insert
 - [x] Fix from_number still using default - changed undefined to null for nullable fields
 - [x] Fix empty strings being passed to nullable fields - added .trim() to convert empty strings to null
+- [x] Fix empty strings still being passed - created toNullIfEmpty() helper function with explicit empty check
