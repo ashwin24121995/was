@@ -219,3 +219,8 @@
   - Use data.messages.key.cleanedSenderPn instead of data.message.from
   - Handle remoteJid correctly (can be LID, not always phone number)
 - [ ] Test incoming messages after fix
+
+## Bug Fix: Timestamp Conversion
+
+- [ ] Fix timestamp conversion - remove * 1000 (WASender already sends milliseconds)
+- [ ] Test incoming messages after fix

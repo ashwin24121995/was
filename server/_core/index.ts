@@ -86,7 +86,7 @@ async function startServer() {
       // Extract fields from the new payload structure
       const from = messageData.key?.cleanedSenderPn || messageData.key?.remoteJid;
       const messageBody = messageData.messageBody || '';
-      const timestamp = req.body.timestamp ? new Date(req.body.timestamp * 1000) : new Date();
+      const timestamp = req.body.timestamp ? new Date(req.body.timestamp) : new Date();
       
       // Determine message type and media URL
       let messageType = 'text';
