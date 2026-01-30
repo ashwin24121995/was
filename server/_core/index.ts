@@ -127,6 +127,21 @@ async function startServer() {
         customerName: from, // Will be updated later
       });
 
+      // Check for duplicate message (same content + conversation within last 5 seconds)
+      const { getMessagesByConversationId } = await import("../db.js");
+      const recentMessages = await getMessagesByConversationId(conversation.id);
+      const fiveSecondsAgo = new Date(Date.now() - 5000);
+      const isDuplicate = recentMessages.some(msg => 
+        msg.content === messageBody && 
+        msg.timestamp && 
+        new Date(msg.timestamp) > fiveSecondsAgo
+      );
+
+      if (isDuplicate) {
+        console.log("[Webhook] Duplicate message detected, skipping");
+        return res.status(200).json({ success: true, message: "Duplicate message ignored" });
+      }
+
       // Save message to database
       await createMessage({
         conversationId: conversation.id,

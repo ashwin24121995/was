@@ -237,3 +237,15 @@
 - [ ] Fix getOrCreateConversation to match existing conversations correctly
 - [ ] Ensure phone number format is consistent (with/without country code, with/without + sign)
 - [ ] Test incoming and outgoing messages use same conversation
+
+## Bug: Real-Time Updates Not Working
+
+- [ ] Fix Socket.IO connection on agent dashboard
+- [ ] Ensure Socket.IO works on Railway deployment (CORS, custom domain)
+- [ ] Test real-time message delivery without page refresh
+
+## Bug: Duplicate Messages (3x)
+
+- [ ] Find why same message is being inserted multiple times
+- [ ] Check webhook handler for duplicate message creation
+- [ ] Verify message deduplication logic

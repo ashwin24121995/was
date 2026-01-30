@@ -1,0 +1,9 @@
+{
+  "query": "DELETE FROM messages; DELETE FROM conversations;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user Hbsm33TssSr3JiD.723f584c7613 --database NvQwFLJB5tXKDHQqKqZgVU --execute DELETE FROM messages; DELETE FROM conversations;",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 1870
+}

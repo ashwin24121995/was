@@ -52,9 +52,11 @@ export default function AgentDashboard() {
         ?.split("=")[1];
 
       if (token) {
-        const socketInstance = io({
+        // Connect to the same origin (works for both dev and production)
+        const socketInstance = io(window.location.origin, {
           auth: { token },
-          transports: ["polling", "websocket"],
+          transports: ["websocket", "polling"],
+          path: "/socket.io",
         });
 
         socketInstance.on("connect", () => {
