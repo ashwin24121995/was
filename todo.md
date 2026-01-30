@@ -224,3 +224,16 @@
 
 - [ ] Fix timestamp conversion - remove * 1000 (WASender already sends milliseconds)
 - [ ] Test incoming messages after fix
+
+## Bug: Webhook Not Receiving Messages
+
+- [ ] Verify webhook secret in database matches WASender
+- [ ] Test webhook endpoint accessibility from external sources
+- [ ] Use WASender Webhook Simulator to test delivery
+- [ ] Check if webhook account exists in database with correct API key
+
+## Bug: Duplicate Conversations for Incoming Messages
+
+- [ ] Fix getOrCreateConversation to match existing conversations correctly
+- [ ] Ensure phone number format is consistent (with/without country code, with/without + sign)
+- [ ] Test incoming and outgoing messages use same conversation

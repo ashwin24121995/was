@@ -229,15 +229,30 @@ export async function getConversationById(id: number): Promise<Conversation | un
   return result[0];
 }
 
+// Normalize phone number by removing all non-numeric characters
+export function normalizePhoneNumber(phone: string): string {
+  return phone.replace(/\D/g, '');
+}
+
 export async function getConversationByPhone(customerPhone: string, accountId: number): Promise<Conversation | undefined> {
   const db = await getDb();
   if (!db) return undefined;
-  const result = await db
+  
+  // Normalize the input phone number
+  const normalizedPhone = normalizePhoneNumber(customerPhone);
+  
+  // Get all conversations for this account
+  const allConversations = await db
     .select()
     .from(conversations)
-    .where(and(eq(conversations.customerPhone, customerPhone), eq(conversations.accountId, accountId)))
-    .limit(1);
-  return result[0];
+    .where(eq(conversations.accountId, accountId));
+  
+  // Find conversation with matching normalized phone number
+  const match = allConversations.find(conv => 
+    normalizePhoneNumber(conv.customerPhone) === normalizedPhone
+  );
+  
+  return match;
 }
 
 export async function createConversation(conversation: InsertConversation): Promise<number> {
