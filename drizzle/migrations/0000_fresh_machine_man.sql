@@ -60,8 +60,10 @@ CREATE TABLE `messages` (
 	`media_url` text,
 	`media_type` enum('image','audio','document','sticker'),
 	`status` enum('pending','sent','delivered','failed') NOT NULL DEFAULT 'pending',
+	`external_id` varchar(255),
 	`timestamp` timestamp NOT NULL DEFAULT (now()),
-	CONSTRAINT `messages_id` PRIMARY KEY(`id`)
+	CONSTRAINT `messages_id` PRIMARY KEY(`id`),
+	CONSTRAINT `messages_external_id_unique` UNIQUE(`external_id`)
 );
 --> statement-breakpoint
 CREATE TABLE `quick_reply_templates` (
@@ -113,6 +115,7 @@ CREATE TABLE `webhook_accounts` (
 	`id` serial AUTO_INCREMENT NOT NULL,
 	`name` text NOT NULL,
 	`api_key` varchar(64) NOT NULL,
+	`webhook_secret` varchar(64) NOT NULL,
 	`webhook_url` text,
 	`phone_number` varchar(20),
 	`status` enum('active','inactive') NOT NULL DEFAULT 'active',

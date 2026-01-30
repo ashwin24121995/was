@@ -84,9 +84,15 @@ async function startServer() {
       }
 
       // Extract fields from the new payload structure
+      const messageId = messageData.key?.id; // Unique message ID from WASender
       const from = messageData.key?.cleanedSenderPn || messageData.key?.remoteJid;
       const messageBody = messageData.messageBody || '';
       const timestamp = req.body.timestamp ? new Date(req.body.timestamp) : new Date();
+
+      if (!messageId) {
+        console.log("[Webhook] No message ID found, skipping");
+        return res.status(200).json({ success: true, message: "No message ID" });
+      }
       
       // Determine message type and media URL
       let messageType = 'text';
@@ -127,22 +133,16 @@ async function startServer() {
         customerName: from, // Will be updated later
       });
 
-      // Check for duplicate message (same content + conversation within last 5 seconds)
-      const { getMessagesByConversationId } = await import("../db.js");
-      const recentMessages = await getMessagesByConversationId(conversation.id);
-      const fiveSecondsAgo = new Date(Date.now() - 5000);
-      const isDuplicate = recentMessages.some(msg => 
-        msg.content === messageBody && 
-        msg.timestamp && 
-        new Date(msg.timestamp) > fiveSecondsAgo
-      );
-
-      if (isDuplicate) {
-        console.log("[Webhook] Duplicate message detected, skipping");
+      // Check for duplicate message using external_id (WASender message ID)
+      const { getMessageByExternalId } = await import("../db.js");
+      const existingMessage = await getMessageByExternalId(messageId);
+      
+      if (existingMessage) {
+        console.log(`[Webhook] Duplicate message detected (ID: ${messageId}), skipping`);
         return res.status(200).json({ success: true, message: "Duplicate message ignored" });
       }
 
-      // Save message to database
+      // Save message to database with external_id
       await createMessage({
         conversationId: conversation.id,
         sender: "customer",
@@ -150,6 +150,7 @@ async function startServer() {
         messageType: messageType,
         mediaUrl: mediaUrl,
         status: "delivered",
+        externalId: messageId, // Store WASender message ID
       });
 
       // Broadcast message via Socket.IO

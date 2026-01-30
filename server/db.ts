@@ -351,6 +351,13 @@ export async function getMessagesByConversationId(conversationId: number): Promi
   return await db.select().from(messages).where(eq(messages.conversationId, conversationId)).orderBy(messages.timestamp);
 }
 
+export async function getMessageByExternalId(externalId: string): Promise<Message | undefined> {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(messages).where(eq(messages.externalId, externalId)).limit(1);
+  return result[0];
+}
+
 export async function createMessage(message: InsertMessage): Promise<number> {
   const db = await getDb();
   if (!db) throw new Error("Database not available");

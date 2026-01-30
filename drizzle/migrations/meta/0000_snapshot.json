@@ -1,7 +1,7 @@
 {
   "version": "5",
   "dialect": "mysql",
-  "id": "7f635ad6-88ec-4905-9cab-41c4404820ed",
+  "id": "207793c9-a151-4e06-934a-a3b04efac264",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "agent_accounts": {
@@ -391,6 +391,13 @@
           "autoincrement": false,
           "default": "'pending'"
         },
+        "external_id": {
+          "name": "external_id",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
         "timestamp": {
           "name": "timestamp",
           "type": "timestamp",
@@ -410,7 +417,14 @@
           ]
         }
       },
-      "uniqueConstraints": {},
+      "uniqueConstraints": {
+        "messages_external_id_unique": {
+          "name": "messages_external_id_unique",
+          "columns": [
+            "external_id"
+          ]
+        }
+      },
       "checkConstraint": {}
     },
     "quick_reply_templates": {
@@ -715,6 +729,13 @@
         },
         "api_key": {
           "name": "api_key",
+          "type": "varchar(64)",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "webhook_secret": {
+          "name": "webhook_secret",
           "type": "varchar(64)",
           "primaryKey": false,
           "notNull": true,

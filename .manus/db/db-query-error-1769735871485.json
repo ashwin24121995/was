@@ -1,0 +1,8 @@
+{
+  "query": "ALTER TABLE messages ADD COLUMN external_id VARCHAR(255) UNIQUE;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user Hbsm33TssSr3JiD.723f584c7613 --database NvQwFLJB5tXKDHQqKqZgVU --execute ALTER TABLE messages ADD COLUMN external_id VARCHAR(255) UNIQUE;",
+  "returncode": 1,
+  "logs": [
+    "ERROR 8200 (HY000) at line 1: unsupported add column 'external_id' constraint UNIQUE KEY when altering 'NvQwFLJB5tXKDHQqKqZgVU.messages'"
+  ]
+}

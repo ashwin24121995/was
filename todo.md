@@ -249,3 +249,9 @@
 - [ ] Find why same message is being inserted multiple times
 - [ ] Check webhook handler for duplicate message creation
 - [ ] Verify message deduplication logic
+
+## Bug: Message Deduplication Still Failing
+
+- [ ] Add external_id field to messages table for WASender message ID
+- [ ] Update webhook handler to check external_id for duplicates
+- [ ] Test that each message appears only once
