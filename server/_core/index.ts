@@ -153,19 +153,26 @@ async function startServer() {
         externalId: messageId, // Store WASender message ID
       });
 
-      // Broadcast message via Socket.IO
+      // Broadcast message via Socket.IO to all agents linked to this account
       const { getIO } = await import("./socket");
+      const { getAgentsByAccountId } = await import("../db.js");
       const io = getIO();
       if (io) {
-        io.to(`account:${account.id}`).emit("new_message", {
-          conversationId: conversation.id,
-          message: {
-            sender: "customer",
-            content: messageBody,
-            messageType: messageType,
-            mediaUrl: mediaUrl,
-            timestamp: timestamp,
-          },
+        // Get all agents linked to this account
+        const agents = await getAgentsByAccountId(account.id);
+        
+        // Broadcast to each agent's room
+        agents.forEach((agent) => {
+          io.to(`agent:${agent.id}`).emit("new_message", {
+            conversationId: conversation.id,
+            message: {
+              sender: "customer",
+              content: messageBody,
+              messageType: messageType,
+              mediaUrl: mediaUrl,
+              timestamp: timestamp,
+            },
+          });
         });
       }
 

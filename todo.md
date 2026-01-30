@@ -255,3 +255,66 @@
 - [ ] Add external_id field to messages table for WASender message ID
 - [ ] Update webhook handler to check external_id for duplicates
 - [ ] Test that each message appears only once
+
+
+## Critical: Real-Time Messaging Zero-Delay Implementation
+
+- [ ] Configure Socket.IO with proper CORS for custom domains
+- [ ] Test Socket.IO connection works immediately on page load
+- [ ] Verify incoming messages appear instantly without refresh
+- [ ] Test with multiple agents simultaneously
+- [ ] Ensure Socket.IO reconnects automatically on network interruption
+
+## WASender API - All 14 Message Types Implementation
+
+- [x] 1. Send Text Message - Already working
+- [ ] 2. Send Image Message - Add imageUrl parameter support
+- [ ] 3. Send Video Message - Add videoUrl parameter support  
+- [ ] 4. Send Document Message - Add documentUrl parameter support
+- [ ] 5. Send Audio Message - Add audioUrl parameter support
+- [ ] 6. Send Sticker Message - Add stickerUrl parameter support (.webp only)
+- [ ] 7. Send Contact Card - Add contact object parameter support
+- [ ] 8. Send Location - Add location parameters (lat/long)
+- [ ] 9. Send Poll Message - Add poll parameters
+- [ ] 10. Send Quoted Message - Add quoted message reply support
+- [ ] 11. Send View Once Message - Add viewOnce parameter
+- [ ] 12. Edit Message - Implement PUT /api/messages/{msgId}
+- [ ] 13. Delete Message - Implement DELETE /api/messages/{msgId}
+- [ ] 14. Get Message Info - Implement GET /api/messages/{msgId}/info
+
+## Media Upload & Handling
+
+- [ ] Implement Upload Media File (POST /api/upload) in WASender API client
+- [ ] Implement Decrypt Media File (POST /api/decrypt-media) in WASender API client
+- [ ] Add file upload UI in agent chat interface
+- [ ] Support drag-and-drop for file uploads
+- [ ] Show media preview before sending
+
+## Webhook Handler - All Message Types
+
+- [ ] Handle incoming image messages (extract imageUrl from webhook)
+- [ ] Handle incoming video messages (extract videoUrl from webhook)
+- [ ] Handle incoming audio messages (extract audioUrl from webhook)
+- [ ] Handle incoming document messages (extract documentUrl from webhook)
+- [ ] Handle incoming location messages
+- [ ] Handle incoming contact card messages
+- [ ] Handle quoted/reply messages
+- [ ] Handle message edit events
+- [ ] Handle message delete events
+
+## Production Database Cleanup
+
+- [ ] Delete all duplicate messages from Railway production database
+- [ ] Delete all duplicate conversations from Railway production database
+- [ ] Verify database is clean before testing
+
+## Final Testing Checklist
+
+- [ ] Test sending text message - appears instantly for agent
+- [ ] Test receiving text message - appears instantly without refresh
+- [ ] Test phone number normalization - no duplicate conversations
+- [ ] Test message deduplication - each message appears only once
+- [ ] Test Socket.IO works on custom domain
+- [ ] Test all 14 message types (when implemented)
+- [ ] Test with 2+ agents simultaneously
+- [ ] Verify zero-delay real-time updates in production
